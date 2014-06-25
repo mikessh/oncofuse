@@ -21,5 +21,8 @@ class Util {
         new InputStreamReader(Util.class.classLoader.getResourceAsStream(resourceName))
     }
 
-
+    static InputStreamReader getInputStream(String fileName, boolean fromResources) {
+        fromResources ? new InputStreamReader(Util.class.classLoader.getResourceAsStream(fileName)) :
+                        new InputStreamReader(new FileInputStream(fileName))
+    }
 }

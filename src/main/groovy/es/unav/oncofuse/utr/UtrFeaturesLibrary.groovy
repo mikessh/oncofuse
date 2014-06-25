@@ -14,11 +14,7 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.expression
+package es.unav.oncofuse.utr
 
-import es.unav.oncofuse.segments.Transcript
-
-class ExpressionData {
-    final Transcript parent
-    //final Map<Tissue, >
+class UtrFeaturesLibrary {
 }

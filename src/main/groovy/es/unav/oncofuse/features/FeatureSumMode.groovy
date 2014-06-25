@@ -14,14 +14,13 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.expression
+package es.unav.oncofuse.features
 
-import es.unav.oncofuse.ExpressionSystem
+enum FeatureSumMode {
+    Sum("sum"), Avg("avg"), Max("max")
 
-class ExpressionValue {
-    final double[] values = new double[ExpressionSystem.N_SYSTEMS]
+    FeatureSumMode(String value) { this.value = value }
+    private final String value
 
-    double get(ExpressionSystem system) {
-        values[(int)system]
-    }
+    String value() { value }
 }
