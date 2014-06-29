@@ -14,14 +14,30 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.breakpoint
+package es.unav.oncofuse.go
 
-class GenomicBreakpoint {
-    final String chr
-    final int coord
+class GoTerm {
+    final String id
+    final List<GoTheme> themes = new LinkedList<>()
 
-    GenomicBreakpoint(String chr, int coord) {
-        this.chr = chr
-        this.coord = coord
+    GoTerm(String id) {
+        this.id = id
+    }
+
+    @Override
+    boolean equals(o) {
+        if (this.is(o)) return true
+        if (getClass() != o.class) return false
+
+        GoTerm goTerm = (GoTerm) o
+
+        if (id != goTerm.id) return false
+
+        return true
+    }
+
+    @Override
+    int hashCode() {
+        return id.hashCode()
     }
 }

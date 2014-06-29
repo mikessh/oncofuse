@@ -27,7 +27,7 @@ class BreakpointMapper {
         this.genomicLibrary = genomicLibrary
     }
 
-    List<TranscriptBreakpoint> map(GenomicBreakpoint breakpoint) {
+    List<TranscriptBreakpoint> map(GenomicBreakpoint breakpoint, boolean prime5) {
         def transcriptBreakpoints = new LinkedList<TranscriptBreakpoint>()
 
         // Find corresponding transcript
@@ -62,7 +62,7 @@ class BreakpointMapper {
 
             transcriptBreakpoints.add(new TranscriptBreakpoint(breakpoint, segment, breakpointType,
                     segmentGenomicCoord, retainedCdsSize,
-                    breakpoint.prime5 ? retainedCdsSize : transcript.cdsSize - retainedCdsSize
+                    prime5 ? retainedCdsSize : transcript.cdsSize - retainedCdsSize
             ))
         }
 

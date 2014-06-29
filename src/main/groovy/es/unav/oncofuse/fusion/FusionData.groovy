@@ -16,7 +16,15 @@
 
 package es.unav.oncofuse.fusion
 
+import es.unav.oncofuse.sample.SampleMetadata
+
 class FusionData {
     final FpgData fpg5, fpg3
-    final String id, tissue, sample
+    final SampleMetadata sample
+
+    FusionData(FpgData fpg5, FpgData fpg3, SampleMetadata sample) {
+        this.fpg5 = fpg5
+        this.fpg3 = fpg3
+        this.sample = sample
+    }
 }

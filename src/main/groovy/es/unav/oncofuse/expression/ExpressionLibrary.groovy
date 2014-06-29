@@ -23,35 +23,59 @@ import es.unav.oncofuse.segments.GenomicLibrary
 import es.unav.oncofuse.segments.Transcript
 
 class ExpressionLibrary {
-    final Map<Tissue, FeatureTable> expressionTables = new HashMap<>()
+    private final Map<Tissue, FeatureTable> expressionTables = new HashMap<>()
+    private final Map<String, Tissue> tissueById = new HashMap<>()
+    final GenomicLibrary genomicLibrary
+    final int nFeatures
 
     ExpressionLibrary(GenomicLibrary genomicLibrary, String customLibraryFileName) {
         this(genomicLibrary)
-        loadLibrary(customLibraryFileName, genomicLibrary, false)
+        int nFeatures = loadLibrary(customLibraryFileName, genomicLibrary, false)
+        if (this.nFeatures != nFeatures) {
+            throw new Exception("Additional library tables doesn't have the same number of features as basic ones")
+        }
     }
 
     ExpressionLibrary(GenomicLibrary genomicLibrary) {
-        loadLibrary("common/libs.txt", genomicLibrary, true)
+        this.nFeatures = loadLibrary("common/libs.txt", genomicLibrary, true)
+        this.genomicLibrary = genomicLibrary
     }
 
-    void loadLibrary(String libraryFileName, GenomicLibrary genomicLibrary, boolean fromResource) {
+    private int loadLibrary(String libraryFileName, GenomicLibrary genomicLibrary, boolean fromResource) {
+        int nFeatures = -1
+
         Util.getInputStream(libraryFileName, fromResource).splitEachLine("\t") { splitLine ->
             if (!splitLine[0].startsWith("#")) {
-                //Tissue(String id, String family, boolean normal) {
+
                 String tissueId, tissueFamily
                 (tissueId, tissueFamily) = splitLine[0..1]
                 boolean tissueNormal = splitLine[2].toBoolean()
                 def tissue = new Tissue(tissueId, tissueFamily, tissueNormal)
+                tissueById.put(tissueId, tissue)
 
                 String fileName = splitLine[4]
                 def dataStream = Util.getInputStream(fileName, fromResource)
-                expressionTables.put(tissue, new FeatureTable(genomicLibrary,
-                        dataStream, false, FeatureSumMode.Max))
+                def featureTable = new FeatureTable(genomicLibrary,
+                        dataStream, false, FeatureSumMode.Max)
+
+                if (nFeatures < 0) {
+                    nFeatures = featureTable.nFeatures
+                } else if (nFeatures != featureTable.nFeatures) {
+                    throw new Exception("All tables in expression library should have the same number of features")
+                }
+
+                expressionTables.put(tissue, featureTable)
             }
         }
+
+        nFeatures
     }
 
     double[] expression(Tissue tissue, Transcript transcript) {
         expressionTables[tissue].features(transcript)
+    }
+
+    Tissue getById(String tissueId) {
+        tissueById[tissueId]
     }
 }

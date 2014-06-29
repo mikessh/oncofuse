@@ -19,11 +19,13 @@ package es.unav.oncofuse.protein
 class ProteinFeature {
     final int aaFrom, aaTo
     final String type
+    final ProteinFeatures parent
 
-    ProteinFeature(int aaFrom, int aaTo, String type) {
+    ProteinFeature(int aaFrom, int aaTo, String type, ProteinFeatures parent) {
         this.aaFrom = aaFrom
         this.aaTo = aaTo
         this.type = type
+        this.parent = parent
     }
 
     boolean inRange(int aaFrom, int aaTo) {

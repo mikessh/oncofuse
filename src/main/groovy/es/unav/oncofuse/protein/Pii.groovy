@@ -21,8 +21,8 @@ import es.unav.oncofuse.segments.Transcript
 class Pii extends ProteinFeature {
     final Transcript target
 
-    Pii(int aaFrom, int aaTo, Transcript target) {
-        super(aaFrom, aaTo, "pii")
+    Pii(int aaFrom, int aaTo, Transcript target, ProteinFeatures parent) {
+        super(aaFrom, aaTo, "pii", parent)
         this.target = target
     }
 }

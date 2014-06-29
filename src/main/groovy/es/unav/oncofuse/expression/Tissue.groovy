@@ -26,6 +26,7 @@ class Tissue {
         this.normal = normal
     }
 
+    @Override
     boolean equals(o) {
         if (this.is(o)) return true
         if (getClass() != o.class) return false
@@ -37,6 +38,7 @@ class Tissue {
         return true
     }
 
+    @Override
     int hashCode() {
         return id.hashCode()
     }

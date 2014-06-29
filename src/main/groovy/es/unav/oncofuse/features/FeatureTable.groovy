@@ -43,6 +43,9 @@ class FeatureTable {
                     throw new Exception("Same number of features expected for each row of feature table")
                 }
 
+                if (nFeatures == 0)
+                    throw new Exception("Table doesn't contain any features")
+
                 if (!featureData)
                     featureMap.put(transcript, featureData = new FeatureData(splitLine))
 

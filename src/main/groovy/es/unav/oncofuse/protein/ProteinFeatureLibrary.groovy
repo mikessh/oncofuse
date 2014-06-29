@@ -22,42 +22,47 @@ import es.unav.oncofuse.segments.Transcript
 
 class ProteinFeatureLibrary {
     final Map<Transcript, ProteinFeatures> transcript2Features = new HashMap<>()
+    final Map<String, Integer> domainCounts = new HashMap<>()
     final GenomicLibrary genomicLibrary
 
     ProteinFeatureLibrary(GenomicLibrary genomicLibrary) {
         this.genomicLibrary = genomicLibrary
 
-        Util.loadResource("common/domains.txt").eachLine(1) { line ->
-            //ENSTxxxx KANSL1L	IPR026180	1	987	Family
-            def splitLine = line.split("\t")
-            String transcriptId, geneName, domainId, domainType
-            (transcriptId, geneName, domainId, domainType) = splitLine[[(0..2), 5].flatten()]
-            int aaFrom, aaTo
-            (aaFrom, aaTo) = splitLine[3..4].collect { it.toInteger() }
+        Util.loadResource("common/domains.txt").splitEachLine("\t") { splitLine ->
+            if (!splitLine[0].startsWith("#")) {
+                //ENSTxxxx KANSL1L	IPR026180	1	987	Family
+                String transcriptId, geneName, domainId, domainType
+                (transcriptId, geneName, domainId, domainType) = splitLine[[(0..2), 5].flatten()]
+                int aaFrom, aaTo
+                (aaFrom, aaTo) = splitLine[3..4].collect { it.toInteger() }
 
-            def features = getFeatures(transcriptId, geneName)
-            if (features)
-                features.addFeature(new Domain(aaFrom, aaTo, domainType, domainId))
+                def features = getOrCreateEntry(transcriptId, geneName)
+                if (features) {
+                    features.addFeature(new Domain(aaFrom, aaTo, domainType, domainId, features))
+                    domainCounts.put(domainId, (domainCounts[domainId] ?: 0) + 1)
+                }
+            }
         }
 
-        Util.loadResource("common/pii.txt").eachLine(1) { line ->
-            //fromENST  A2M	toENST  KLK3	1376	1463
-            def splitLine = line.split("\t")
-            String fromTranscriptId, fromGeneName, toTranscriptId, toGeneName
-            (fromTranscriptId, fromGeneName, toTranscriptId, toGeneName) = splitLine[0..3]
-            int aaFrom, aaTo
-            (aaFrom, aaTo) = splitLine[4..5].collect { it.toInteger() }
+        Util.loadResource("common/pii.txt").splitEachLine("\t") { splitLine ->
+            if (!splitLine[0].startsWith("#")) {
+                //fromENST  A2M	toENST  KLK3	1376	1463
+                String fromTranscriptId, fromGeneName, toTranscriptId, toGeneName
+                (fromTranscriptId, fromGeneName, toTranscriptId, toGeneName) = splitLine[0..3]
+                int aaFrom, aaTo
+                (aaFrom, aaTo) = splitLine[4..5].collect { it.toInteger() }
 
-            def target = genomicLibrary.fetchTranscript(toTranscriptId, toGeneName)
-            if (target) {
-                def features = getFeatures(fromTranscriptId, fromGeneName)
-                if (features)
-                    features.addFeature(new Pii(aaFrom, aaTo, target))
+                def target = genomicLibrary.fetchTranscript(toTranscriptId, toGeneName)
+                if (target) {
+                    def features = getOrCreateEntry(fromTranscriptId, fromGeneName)
+                    if (features)
+                        features.addFeature(new Pii(aaFrom, aaTo, target, features))
+                }
             }
         }
     }
 
-    private ProteinFeatures getFeatures(String transcriptId, String geneName) {
+    private ProteinFeatures getOrCreateEntry(String transcriptId, String geneName) {
         def transcript = genomicLibrary.fetchTranscript(transcriptId, geneName)
         if (transcript) {
             def features = transcript2Features[transcript]

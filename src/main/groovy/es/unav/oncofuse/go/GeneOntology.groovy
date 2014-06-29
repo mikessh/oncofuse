@@ -14,14 +14,11 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.breakpoint
+package es.unav.oncofuse.go
 
-class GenomicBreakpoint {
-    final String chr
-    final int coord
+import es.unav.oncofuse.segments.Transcript
 
-    GenomicBreakpoint(String chr, int coord) {
-        this.chr = chr
-        this.coord = coord
-    }
+interface GeneOntology {
+    int getNumberOfThemes()
+    List<GoTerm> goTerms(Transcript transcript)
 }

@@ -16,5 +16,32 @@
 
 package es.unav.oncofuse.utr
 
+import es.unav.oncofuse.Util
+import es.unav.oncofuse.features.FeatureSumMode
+import es.unav.oncofuse.features.FeatureTable
+import es.unav.oncofuse.segments.GenomicLibrary
+import es.unav.oncofuse.segments.Transcript
+
 class UtrFeaturesLibrary {
+    private final FeatureTable utrFeatureTable
+    final GenomicLibrary genomicLibrary
+
+    UtrFeaturesLibrary(GenomicLibrary genomicLibrary) {
+        this(genomicLibrary, "common/utr.txt", true)
+    }
+
+    UtrFeaturesLibrary(GenomicLibrary genomicLibrary, String fileName) {
+        this(genomicLibrary, fileName, false)
+    }
+
+    private UtrFeaturesLibrary(GenomicLibrary genomicLibrary,
+                               String inputFileName, boolean fromResource) {
+        this.genomicLibrary = genomicLibrary
+        this.utrFeatureTable = new FeatureTable(genomicLibrary,
+                Util.getInputStream(inputFileName, fromResource), false, FeatureSumMode.Avg)
+    }
+
+    double[] utrFeatures(Transcript transcript) {
+        utrFeatureTable.features(transcript)
+    }
 }

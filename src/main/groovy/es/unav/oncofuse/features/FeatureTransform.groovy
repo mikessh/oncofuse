@@ -14,14 +14,22 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.breakpoint
+package es.unav.oncofuse.features
 
-class GenomicBreakpoint {
-    final String chr
-    final int coord
+enum FeatureTransform {
+    FPKM(true, 1, 0, 20), UTR(true, 1, 0, 10), None(false, 0, Double.MIN_VALUE, Double.MAX_VALUE)
 
-    GenomicBreakpoint(String chr, int coord) {
-        this.chr = chr
-        this.coord = coord
+    final boolean log
+    final double jitter, low, high
+
+    FeatureTransform(boolean log, double jitter, double low, double high) {
+        this.log = log
+        this.jitter = jitter
+        this.low = low
+        this.high = high
+    }
+
+    double transform(double input) {
+        Math.min(high, Math.max(low, log ? Math.log(input + jitter) : input))
     }
 }

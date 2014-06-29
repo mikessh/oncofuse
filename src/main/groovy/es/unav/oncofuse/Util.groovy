@@ -22,7 +22,7 @@ class Util {
     }
 
     static InputStreamReader getInputStream(String fileName, boolean fromResources) {
-        fromResources ? new InputStreamReader(Util.class.classLoader.getResourceAsStream(fileName)) :
+        fromResources ? loadResource(fileName) :
                         new InputStreamReader(new FileInputStream(fileName))
     }
 }

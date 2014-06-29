@@ -21,8 +21,8 @@ import es.unav.oncofuse.segments.Transcript
 class Domain extends ProteinFeature {
     final String id
 
-    Domain(int aaFrom, int aaTo, String type, String id) {
-        super(aaFrom, aaTo, type)
+    Domain(int aaFrom, int aaTo, String type, String id, ProteinFeatures parent) {
+        super(aaFrom, aaTo, type, parent)
         this.id = id
     }
 }

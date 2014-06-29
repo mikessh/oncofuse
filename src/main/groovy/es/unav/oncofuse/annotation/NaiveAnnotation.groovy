@@ -14,14 +14,17 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.breakpoint
+package es.unav.oncofuse.annotation
 
-class GenomicBreakpoint {
-    final String chr
-    final int coord
+import es.unav.oncofuse.fusion.FusionData
 
-    GenomicBreakpoint(String chr, int coord) {
-        this.chr = chr
-        this.coord = coord
+class NaiveAnnotation {
+    final NaiveFeatures retained, lost
+    final FusionData parent
+
+    NaiveAnnotation(NaiveFeatures retained, NaiveFeatures lost, FusionData parent) {
+        this.retained = retained
+        this.lost = lost
+        this.parent = parent
     }
 }

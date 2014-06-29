@@ -20,4 +20,8 @@ import es.unav.oncofuse.breakpoint.TranscriptBreakpoint
 
 class FpgData {
     final List<TranscriptBreakpoint> parents
+
+    FpgData(List<TranscriptBreakpoint> parents) {
+        this.parents = parents
+    }
 }

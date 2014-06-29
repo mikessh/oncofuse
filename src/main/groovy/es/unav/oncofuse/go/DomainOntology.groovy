@@ -14,14 +14,15 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.breakpoint
+package es.unav.oncofuse.go
 
-class GenomicBreakpoint {
-    final String chr
-    final int coord
+import es.unav.oncofuse.protein.Domain
+import es.unav.oncofuse.protein.ProteinFeatureLibrary
 
-    GenomicBreakpoint(String chr, int coord) {
-        this.chr = chr
-        this.coord = coord
-    }
+interface DomainOntology {
+    ProteinFeatureLibrary getProteinFeatureLibrary()
+
+    List<GoTerm> goTerms(Domain domain)
+
+    int domainAbundance(Domain domain)
 }
