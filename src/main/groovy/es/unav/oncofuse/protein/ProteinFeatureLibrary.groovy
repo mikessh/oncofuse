@@ -62,6 +62,10 @@ class ProteinFeatureLibrary {
         }
     }
 
+    ProteinFeatures features(Transcript transcript, int cdsPos, boolean prime5) {
+        transcript2Features[transcript].forRange(cdsPos, prime5)
+    }
+
     private ProteinFeatures getOrCreateEntry(String transcriptId, String geneName) {
         def transcript = genomicLibrary.fetchTranscript(transcriptId, geneName)
         if (transcript) {

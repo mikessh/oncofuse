@@ -52,4 +52,12 @@ class ProteinFeatures {
         new ProteinFeatures(parent, features.findAll { it.inRange(cdsEnd, prime5) },
                 prime5 ? 1 : cdsEnd, prime5 ? cdsEnd : parent.cdsSize)
     }
+
+    Collection<Domain> getDomains() {
+        features.findAll { it instanceof Domain }
+    }
+
+    Collection<Pii> getPiis() {
+        features.findAll { it instanceof Pii }
+    }
 }

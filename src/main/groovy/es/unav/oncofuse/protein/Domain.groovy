@@ -16,8 +16,6 @@
 
 package es.unav.oncofuse.protein
 
-import es.unav.oncofuse.segments.Transcript
-
 class Domain extends ProteinFeature {
     final String id
 

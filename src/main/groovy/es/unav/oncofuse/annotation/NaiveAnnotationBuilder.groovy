@@ -17,6 +17,7 @@
 package es.unav.oncofuse.annotation
 
 import es.unav.oncofuse.expression.ExpressionLibrary
+import es.unav.oncofuse.fusion.FusionData
 import es.unav.oncofuse.go.DomainOntology
 import es.unav.oncofuse.protein.Domain
 import es.unav.oncofuse.protein.ProteinFeatureLibrary
@@ -31,7 +32,7 @@ class NaiveAnnotationBuilder {
     final DomainOntology domainOntology
 
     NaiveAnnotationBuilder(GenomicLibrary genomicLibrary, ExpressionLibrary expressionLibrary,
-                    UtrFeaturesLibrary utrFeaturesLibrary, DomainOntology domainOntology) {
+                           UtrFeaturesLibrary utrFeaturesLibrary, DomainOntology domainOntology) {
         this.genomicLibrary = genomicLibrary
         this.expressionLibrary = expressionLibrary
         this.utrFeaturesLibrary = utrFeaturesLibrary
@@ -39,7 +40,22 @@ class NaiveAnnotationBuilder {
         this.domainOntology = domainOntology
     }
 
+    NaiveAnnotation annotate(FusionData fusion) {
+        fusion.fpg5.parents.each { fpg5tr ->
+            fusion.fpg3.parents.each { fpg3tr ->
+                def expr5 = expressionLibrary.expression(fusion.sample.tissue, fpg5tr.parentTranscript),
+                    expr3 = expressionLibrary.expression(fusion.sample.tissue, fpg3tr.parentTranscript)
 
+                def utr5 = utrFeaturesLibrary.utrFeatures(fpg5tr.parentTranscript),
+                    utr3 = utrFeaturesLibrary.utrFeatures(fpg3tr.parentTranscript)
+
+                def features5 = proteinFeatureLibrary.features(fpg5tr.parentTranscript, fpg5tr.coordInCds, true),
+                    features3 = proteinFeatureLibrary.features(fpg3tr.parentTranscript, fpg3tr.coordInCds, false)
+
+
+            }
+        }
+    }
 
     private void appendFFAS(double[] ffas, Domain domain) {
         def goTerms = domainOntology.goTerms(domain)

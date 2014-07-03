@@ -17,17 +17,21 @@
 package es.unav.oncofuse.breakpoint
 
 import es.unav.oncofuse.segments.Segment
+import es.unav.oncofuse.segments.Transcript
 
 class TranscriptBreakpoint {
-    final GenomicBreakpoint parent
+    final GenomicBreakpoint genomicBreakpoint
+    final Transcript parentTranscript
     final BreakpointType breakpointType
     final Segment segment
     final int coordInSegment, coordInCds, retainedCdsSize
     final int retainedProteinPart, frame
 
-    TranscriptBreakpoint(GenomicBreakpoint parent, Segment segment, BreakpointType breakpointType,
+    TranscriptBreakpoint(GenomicBreakpoint genomicBreakpoint, Transcript parentTranscript,
+                         Segment segment, BreakpointType breakpointType,
                          int coordInSegment, coordInCds, int retainedCdsSize) {
-        this.parent = parent
+        this.genomicBreakpoint = genomicBreakpoint
+        this.parentTranscript = parentTranscript
         this.segment = segment
         this.breakpointType = breakpointType
         this.coordInSegment = coordInSegment
@@ -38,6 +42,6 @@ class TranscriptBreakpoint {
     }
 
     boolean isPrime5() {
-        parent.prime5
+        genomicBreakpoint.prime5
     }
 }

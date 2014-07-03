@@ -60,7 +60,8 @@ class BreakpointMapper {
             else
                 breakpointType = BreakpointType.CDS
 
-            transcriptBreakpoints.add(new TranscriptBreakpoint(breakpoint, segment, breakpointType,
+            transcriptBreakpoints.add(new TranscriptBreakpoint(breakpoint, transcript,
+                    segment, breakpointType,
                     segmentGenomicCoord, retainedCdsSize,
                     prime5 ? retainedCdsSize : transcript.cdsSize - retainedCdsSize
             ))
