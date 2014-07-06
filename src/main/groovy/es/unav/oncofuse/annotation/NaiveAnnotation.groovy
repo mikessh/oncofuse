@@ -19,12 +19,11 @@ package es.unav.oncofuse.annotation
 import es.unav.oncofuse.fusion.FusionData
 
 class NaiveAnnotation {
-    final NaiveFeatures retained, lost
     final FusionData parent
+    final List<TranscriptBreakpointAnnotation> annotations
 
-    NaiveAnnotation(NaiveFeatures retained, NaiveFeatures lost, FusionData parent) {
-        this.retained = retained
-        this.lost = lost
+    NaiveAnnotation(FusionData parent, List<TranscriptBreakpointAnnotation> annotations) {
         this.parent = parent
+        this.annotations = annotations
     }
 }

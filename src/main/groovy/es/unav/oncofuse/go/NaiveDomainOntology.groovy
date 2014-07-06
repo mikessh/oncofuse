@@ -21,6 +21,7 @@ import es.unav.oncofuse.protein.ProteinFeatureLibrary
 
 class NaiveDomainOntology implements DomainOntology {
     private final Map<String, List<GoTerm>> domainId2Go = new HashMap<>()
+    final GeneOntology geneOntology
     final ProteinFeatureLibrary proteinFeatureLibrary
 
     NaiveDomainOntology(ProteinFeatureLibrary proteinFeatureLibrary) {
@@ -30,6 +31,7 @@ class NaiveDomainOntology implements DomainOntology {
     NaiveDomainOntology(ProteinFeatureLibrary proteinFeatureLibrary,
                         GeneOntology geneOntology) {
         this.proteinFeatureLibrary = proteinFeatureLibrary
+        this.geneOntology = geneOntology
         proteinFeatureLibrary.transcript2Features.each {
             if (it.value instanceof Domain && it.key.canonical) {
                 def domainId = (it.value as Domain).id
@@ -44,6 +46,10 @@ class NaiveDomainOntology implements DomainOntology {
 
     List<GoTerm> goTerms(Domain domain) {
         domainId2Go[domain.id] ?: new LinkedList<>()
+    }
+
+    int getNumberOfThemes() {
+        geneOntology.numberOfThemes
     }
 
     int domainAbundance(Domain domain) {

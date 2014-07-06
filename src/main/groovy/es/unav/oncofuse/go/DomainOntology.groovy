@@ -20,6 +20,8 @@ import es.unav.oncofuse.protein.Domain
 import es.unav.oncofuse.protein.ProteinFeatureLibrary
 
 interface DomainOntology {
+    int getNumberOfThemes()
+
     ProteinFeatureLibrary getProteinFeatureLibrary()
 
     List<GoTerm> goTerms(Domain domain)

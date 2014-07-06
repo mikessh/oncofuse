@@ -14,20 +14,16 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.annotation
+package es.unav.oncofuse.sample
 
-import es.unav.oncofuse.protein.ProteinFeature
+import es.unav.oncofuse.expression.Tissue
 
-class NaiveFeatures {
-    final double[] expr, ffas, pii, utr
-    final List<ProteinFeature> proteinFeatures
+class SampleMetadata {
+    final Tissue tissue
+    final String sampleId
 
-    NaiveFeatures(double[] expr, double[] ffas, double[] pii, double[] utr,
-                  List<ProteinFeature> proteinFeatures) {
-        this.expr = expr
-        this.ffas = ffas
-        this.pii = pii
-        this.utr = utr
-        this.proteinFeatures = proteinFeatures
+    SampleMetadata(Tissue tissue, String sampleId) {
+        this.tissue = tissue
+        this.sampleId = sampleId
     }
 }

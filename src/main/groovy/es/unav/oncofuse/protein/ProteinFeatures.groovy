@@ -43,21 +43,30 @@ class ProteinFeatures {
         features.add(feature)
     }
 
-    ProteinFeature forRange(int aaFrom, int aaTo) {
+    ProteinFeatures forRange(int aaFrom, int aaTo) {
         new ProteinFeatures(this.parent, features.findAll { it.inRange(aaFrom, aaTo) },
                 aaFrom, aaTo)
     }
 
-    ProteinFeature forRange(int cdsEnd, boolean prime5) {
-        new ProteinFeatures(parent, features.findAll { it.inRange(cdsEnd, prime5) },
-                prime5 ? 1 : cdsEnd, prime5 ? cdsEnd : parent.cdsSize)
+    ProteinFeatures forRange(int cdsPos, boolean prime5) {
+        new ProteinFeatures(parent, features.findAll { it.inRange(cdsPos, prime5) },
+                prime5 ? 1 : cdsPos, prime5 ? cdsPos : parent.cdsSize)
     }
 
-    Collection<Domain> getDomains() {
+    ProteinFeatures span(int cdsPos) {
+        new ProteinFeatures(parent, features.findAll { it.span(cdsPos) },
+                cdsPos, cdsPos)
+    }
+
+    List<Domain> getDomains() {
         features.findAll { it instanceof Domain }
     }
 
-    Collection<Pii> getPiis() {
+    List<ProteinFeature> getFeatures() {
+        features
+    }
+
+    List<Pii> getPiis() {
         features.findAll { it instanceof Pii }
     }
 }

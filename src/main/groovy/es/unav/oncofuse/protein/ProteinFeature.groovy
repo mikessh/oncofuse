@@ -32,6 +32,10 @@ class ProteinFeature {
         this.aaFrom >= aaFrom && this.aaTo <= aaTo
     }
 
+    boolean span(int aaPos) {
+        this.aaFrom <= aaPos && this.aaTo >= aaPos
+    }
+
     boolean inRange(int cdsEnd, boolean prime5) {
         prime5 ? this.aaTo <= cdsEnd : this.aaFrom >= cdsEnd
     }

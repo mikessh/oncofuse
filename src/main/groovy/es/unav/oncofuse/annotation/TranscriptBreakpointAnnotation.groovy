@@ -16,18 +16,21 @@
 
 package es.unav.oncofuse.annotation
 
+import es.unav.oncofuse.breakpoint.TranscriptBreakpoint
 import es.unav.oncofuse.protein.ProteinFeature
 
-class NaiveFeatures {
-    final double[] expr, ffas, pii, utr
-    final List<ProteinFeature> proteinFeatures
+class TranscriptBreakpointAnnotation {
+    final TranscriptBreakpoint fpg5tr, fpg3tr
+    final NaiveFeatures retained, lost
+    final final List<ProteinFeature> spanningFeatures
 
-    NaiveFeatures(double[] expr, double[] ffas, double[] pii, double[] utr,
-                  List<ProteinFeature> proteinFeatures) {
-        this.expr = expr
-        this.ffas = ffas
-        this.pii = pii
-        this.utr = utr
-        this.proteinFeatures = proteinFeatures
+    TranscriptBreakpointAnnotation(TranscriptBreakpoint fpg5tr, TranscriptBreakpoint fpg3tr,
+                                   NaiveFeatures retained, NaiveFeatures lost,
+                                   List<ProteinFeature> spanningFeatures) {
+        this.fpg5tr = fpg5tr
+        this.fpg3tr = fpg3tr
+        this.retained = retained
+        this.lost = lost
+        this.spanningFeatures = spanningFeatures
     }
 }

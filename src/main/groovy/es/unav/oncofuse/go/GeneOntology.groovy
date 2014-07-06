@@ -20,5 +20,6 @@ import es.unav.oncofuse.segments.Transcript
 
 interface GeneOntology {
     int getNumberOfThemes()
+
     List<GoTerm> goTerms(Transcript transcript)
 }

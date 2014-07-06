@@ -62,8 +62,12 @@ class ProteinFeatureLibrary {
         }
     }
 
-    ProteinFeatures features(Transcript transcript, int cdsPos, boolean prime5) {
+    ProteinFeatures fetchFeatures(Transcript transcript, int cdsPos, boolean prime5) {
         transcript2Features[transcript].forRange(cdsPos, prime5)
+    }
+
+    ProteinFeatures fetchSpanningFeatures(Transcript transcript, int cdsPos) {
+        transcript2Features[transcript].span(cdsPos)
     }
 
     private ProteinFeatures getOrCreateEntry(String transcriptId, String geneName) {

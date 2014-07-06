@@ -26,18 +26,18 @@ class ExpressionLibrary {
     private final Map<Tissue, FeatureTable> expressionTables = new HashMap<>()
     private final Map<String, Tissue> tissueById = new HashMap<>()
     final GenomicLibrary genomicLibrary
-    final int nFeatures
+    final int numberOfFeatures
 
     ExpressionLibrary(GenomicLibrary genomicLibrary, String customLibraryFileName) {
         this(genomicLibrary)
         int nFeatures = loadLibrary(customLibraryFileName, genomicLibrary, false)
-        if (this.nFeatures != nFeatures) {
+        if (this.numberOfFeatures != nFeatures) {
             throw new Exception("Additional library tables doesn't have the same number of features as basic ones")
         }
     }
 
     ExpressionLibrary(GenomicLibrary genomicLibrary) {
-        this.nFeatures = loadLibrary("common/libs.txt", genomicLibrary, true)
+        this.numberOfFeatures = loadLibrary("common/libs.txt", genomicLibrary, true)
         this.genomicLibrary = genomicLibrary
     }
 
