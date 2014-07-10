@@ -19,18 +19,28 @@ package es.unav.oncofuse.annotation
 import es.unav.oncofuse.breakpoint.TranscriptBreakpoint
 import es.unav.oncofuse.protein.ProteinFeature
 
-class TranscriptBreakpointAnnotation {
+class BasicTranscriptLevelAnnotation {
     final TranscriptBreakpoint fpg5tr, fpg3tr
-    final NaiveFeatures retained, lost
-    final final List<ProteinFeature> spanningFeatures
+    final BasicFeatures retained, lost
+    final final List<ProteinFeature> spanningProteinFeatures
+    final int nFeatures
 
-    TranscriptBreakpointAnnotation(TranscriptBreakpoint fpg5tr, TranscriptBreakpoint fpg3tr,
-                                   NaiveFeatures retained, NaiveFeatures lost,
+    BasicTranscriptLevelAnnotation(TranscriptBreakpoint fpg5tr, TranscriptBreakpoint fpg3tr,
+                                   BasicFeatures retained, BasicFeatures lost,
                                    List<ProteinFeature> spanningFeatures) {
         this.fpg5tr = fpg5tr
         this.fpg3tr = fpg3tr
         this.retained = retained
         this.lost = lost
-        this.spanningFeatures = spanningFeatures
+        this.nFeatures = retained.nFeatures + lost.nFeatures
+        this.spanningProteinFeatures = spanningFeatures
+    }
+
+    String[] featureNameArray() {
+        [retained.listFeatureNames(), lost.listFeatureNames()].flatten().toArray(new String()[nFeatures])
+    }
+
+    double[] featureArray() {
+        [retained.listFeatures(), lost.listFeatures()].flatten().toArray(new double[nFeatures])
     }
 }

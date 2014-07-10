@@ -21,6 +21,7 @@ import es.unav.oncofuse.segments.Transcript
 
 class NaiveGeneOntology implements GeneOntology {
     private final Map<String, List<GoTerm>> geneId2Go = new HashMap<>()
+    final GoTheme[] goThemes
     final int numberOfThemes
 
     NaiveGeneOntology(boolean davidExpand) {
@@ -45,6 +46,8 @@ class NaiveGeneOntology implements GeneOntology {
         }
 
         this.numberOfThemes = themes.size()
+        goThemes = new GoTheme[numberOfThemes]
+        themes.values().each { goThemes[it.id] = it }
 
         final Map<String, List<GoTerm>> davidId2Go = new HashMap<>()
         Util.loadResource("common/id2go.txt").splitEachLine("\t") { splitLine ->

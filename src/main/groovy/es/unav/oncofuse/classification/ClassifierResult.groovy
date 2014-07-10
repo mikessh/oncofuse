@@ -14,20 +14,16 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.annotation
+package es.unav.oncofuse.classification
 
-import es.unav.oncofuse.protein.ProteinFeature
+class ClassifierResult {
+    final double p
+    final int c
 
-class NaiveFeatures {
-    final double[] expr, ffas, pii, utr
-    final List<ProteinFeature> proteinFeatures
-
-    NaiveFeatures(double[] expr, double[] ffas, double[] pii, double[] utr,
-                  List<ProteinFeature> proteinFeatures) {
-        this.expr = expr
-        this.ffas = ffas
-        this.pii = pii
-        this.utr = utr
-        this.proteinFeatures = proteinFeatures
+    ClassifierResult(double p, int c) {
+        this.p = p
+        this.c = c
     }
+
+    static final ClassifierResult BLANK = new ClassifierResult(1, 0)
 }

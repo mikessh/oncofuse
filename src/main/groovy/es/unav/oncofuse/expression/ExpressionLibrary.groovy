@@ -46,7 +46,6 @@ class ExpressionLibrary {
 
         Util.getInputStream(libraryFileName, fromResource).splitEachLine("\t") { splitLine ->
             if (!splitLine[0].startsWith("#")) {
-
                 String tissueId, tissueFamily
                 (tissueId, tissueFamily) = splitLine[0..1]
                 boolean tissueNormal = splitLine[2].toBoolean()
@@ -71,7 +70,7 @@ class ExpressionLibrary {
         nFeatures
     }
 
-    double[] expression(Tissue tissue, Transcript transcript) {
+    double[] getExpression(Tissue tissue, Transcript transcript) {
         expressionTables[tissue].features(transcript)
     }
 

@@ -27,14 +27,14 @@ import es.unav.oncofuse.protein.ProteinFeatureLibrary
 import es.unav.oncofuse.segments.GenomicLibrary
 import es.unav.oncofuse.utr.UtrFeaturesLibrary
 
-class NaiveAnnotationBuilder {
+class BasicAnnotationBuilder {
     final GenomicLibrary genomicLibrary
     final ExpressionLibrary expressionLibrary
     final UtrFeaturesLibrary utrFeaturesLibrary
     final ProteinFeatureLibrary proteinFeatureLibrary
     final DomainOntology domainOntology
 
-    NaiveAnnotationBuilder(GenomicLibrary genomicLibrary, ExpressionLibrary expressionLibrary,
+    BasicAnnotationBuilder(GenomicLibrary genomicLibrary, ExpressionLibrary expressionLibrary,
                            UtrFeaturesLibrary utrFeaturesLibrary, DomainOntology domainOntology) {
         this.genomicLibrary = genomicLibrary
         this.expressionLibrary = expressionLibrary
@@ -43,15 +43,15 @@ class NaiveAnnotationBuilder {
         this.domainOntology = domainOntology
     }
 
-    NaiveAnnotation annotate(FusionData fusion) {
+    BasicFusionAnnotation annotate(FusionData fusion) {
         def tissue = fusion.sample.tissue
 
-        def annotations = new LinkedList<TranscriptBreakpointAnnotation>()
+        def annotations = new LinkedList<BasicTranscriptLevelAnnotation>()
 
         fusion.fpg5.parents.each { fpg5tr ->
             fusion.fpg3.parents.each { fpg3tr ->
-                def expr5 = expressionLibrary.expression(tissue, fpg5tr.parentTranscript),
-                    expr3 = expressionLibrary.expression(tissue, fpg3tr.parentTranscript)
+                def expr5 = expressionLibrary.getExpression(tissue, fpg5tr.parentTranscript),
+                    expr3 = expressionLibrary.getExpression(tissue, fpg3tr.parentTranscript)
 
                 def utr5 = utrFeaturesLibrary.utrFeatures(fpg5tr.parentTranscript),
                     utr3 = utrFeaturesLibrary.utrFeatures(fpg3tr.parentTranscript)
@@ -82,16 +82,16 @@ class NaiveAnnotationBuilder {
                     appendFeature(ffasL, piiExprL, feature, tissue)
                 }
 
-                def annotation = new TranscriptBreakpointAnnotation(fpg5tr, fpg3tr,
-                        new NaiveFeatures(expr5, ffasR, piiExprR, utr3, featuresR),
-                        new NaiveFeatures(expr3, ffasL, piiExprL, utr5, featuresL),
+                def annotation = new BasicTranscriptLevelAnnotation(fpg5tr, fpg3tr,
+                        new BasicFeatures(expr5, ffasR, piiExprR, utr3, featuresR),
+                        new BasicFeatures(expr3, ffasL, piiExprL, utr5, featuresL),
                         featuresS)
 
                 annotations.add(annotation)
             }
         }
 
-        new NaiveAnnotation(fusion, annotations)
+        new BasicFusionAnnotation(this, fusion, annotations)
     }
 
     private void appendFeature(double[] ffas, double[] piiExpr, ProteinFeature feature, Tissue tissue) {
@@ -114,7 +114,7 @@ class NaiveAnnotationBuilder {
 
     private void appendPiiExpr(double[] piiExpr, Tissue tissue, Pii pii) {
         def target = pii.target
-        def features = expressionLibrary.expression(tissue, target)
+        def features = expressionLibrary.getExpression(tissue, target)
         if (features) {
             for (int i = 0; i < piiExpr.length; i++)
                 piiExpr[i] += features[i]

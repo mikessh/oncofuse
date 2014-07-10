@@ -14,16 +14,8 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.annotation
+package es.unav.oncofuse.classification
 
-import es.unav.oncofuse.fusion.FusionData
-
-class NaiveAnnotation {
-    final FusionData parent
-    final List<TranscriptBreakpointAnnotation> annotations
-
-    NaiveAnnotation(FusionData parent, List<TranscriptBreakpointAnnotation> annotations) {
-        this.parent = parent
-        this.annotations = annotations
-    }
+public interface Classifier {
+    ClassifierResult classify(double[] features)
 }

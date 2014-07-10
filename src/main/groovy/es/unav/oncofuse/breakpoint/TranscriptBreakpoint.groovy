@@ -40,8 +40,4 @@ class TranscriptBreakpoint {
         this.retainedProteinPart = retainedCdsSize / 3
         this.frame = retainedCdsSize - this.retainedProteinPart
     }
-
-    boolean isPrime5() {
-        genomicBreakpoint.prime5
-    }
 }

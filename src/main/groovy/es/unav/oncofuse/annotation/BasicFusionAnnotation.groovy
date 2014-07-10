@@ -14,14 +14,20 @@
  limitations under the License.
  */
 
-package es.unav.oncofuse.go
+package es.unav.oncofuse.annotation
 
-import es.unav.oncofuse.segments.Transcript
+import es.unav.oncofuse.fusion.FusionData
 
-interface GeneOntology {
-    int getNumberOfThemes()
+class BasicFusionAnnotation {
+    final FusionData fusion
+    final List<BasicTranscriptLevelAnnotation> annotations
+    final BasicAnnotationBuilder annotationBuilder
 
-    GoTheme[] getGoThemes()
-
-    List<GoTerm> goTerms(Transcript transcript)
+    BasicFusionAnnotation(BasicAnnotationBuilder annotationBuilder,
+                          FusionData fusion,
+                          List<BasicTranscriptLevelAnnotation> annotations) {
+        this.annotationBuilder = annotationBuilder
+        this.fusion = fusion
+        this.annotations = annotations
+    }
 }
