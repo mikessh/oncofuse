@@ -44,4 +44,8 @@ class UtrFeaturesLibrary {
     double[] utrFeatures(Transcript transcript) {
         utrFeatureTable.features(transcript)
     }
+
+    int getNumberOfFeatures() {
+        utrFeatureTable.numberOfFeatures
+    }
 }

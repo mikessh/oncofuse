@@ -120,4 +120,16 @@ class BasicAnnotationBuilder {
                 piiExpr[i] += features[i]
         }
     }
+
+    String getClassifierSchema() {
+        def features = [(0..expressionLibrary.numberOfFeatures).collect { "EXPR_$it" },
+                        (0..domainOntology.numberOfThemes).collect { "FFAS_$it" },
+                        (0..expressionLibrary.numberOfFeatures).collect { "PII_EXPR_$it" },
+                        (0..utrFeaturesLibrary.numberOfFeatures).collect { "UTR_$it" }].flatten()
+
+        "@RELATION ONCOFUSE_BASIC\n" +
+                features.collect { "@ATTRIBUTE\tR_$it\tNUMERIC" }.join("\n") + "\n" +
+                features.collect { "@ATTRIBUTE\tL_$it\tNUMERIC" }.join("\n") + "\n" +
+                "@ATTRIBUTE\tclass\t{0,1}\n@DATA\n"
+    }
 }

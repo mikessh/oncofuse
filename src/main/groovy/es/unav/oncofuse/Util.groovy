@@ -21,8 +21,17 @@ class Util {
         new InputStreamReader(Util.class.classLoader.getResourceAsStream(resourceName))
     }
 
+    static File resourceAsFile(String resourceName) {
+        def url = Util.class.classLoader.getResource(resourceName)
+        new File(url.toURI())
+    }
+
+    static File getFile(String fileName, boolean fromResources) {
+        fromResources ? resourceAsFile(fileName) : new File(fileName)
+    }
+
     static InputStreamReader getInputStream(String fileName, boolean fromResources) {
         fromResources ? loadResource(fileName) :
-                        new InputStreamReader(new FileInputStream(fileName))
+                new InputStreamReader(new FileInputStream(fileName))
     }
 }

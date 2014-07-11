@@ -58,8 +58,8 @@ class ExpressionLibrary {
                         dataStream, false, FeatureSumMode.Max)
 
                 if (nFeatures < 0) {
-                    nFeatures = featureTable.nFeatures
-                } else if (nFeatures != featureTable.nFeatures) {
+                    nFeatures = featureTable.numberOfFeatures
+                } else if (nFeatures != featureTable.numberOfFeatures) {
                     throw new Exception("All tables in expression library should have the same number of features")
                 }
 

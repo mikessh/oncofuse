@@ -21,7 +21,7 @@ import es.unav.oncofuse.segments.Transcript
 
 class FeatureTable {
     private final Map<Transcript, FeatureData> featureMap = new HashMap<>()
-    final int nFeatures
+    final int numberOfFeatures
 
     FeatureTable(GenomicLibrary genomicLibrary,
                  InputStreamReader input,
@@ -53,7 +53,7 @@ class FeatureTable {
             }
         }
 
-        this.nFeatures = nFeatures
+        this.numberOfFeatures = nFeatures
 
         if (accumulationMode == FeatureSumMode.Avg)
             featureMap.values().each { it.avg() }
@@ -63,7 +63,7 @@ class FeatureTable {
         def featureData = featureMap[transcript]
         if (featureData)
             return featureData.values
-        (0..<nFeatures).collect { Double.NaN }
+        (0..<numberOfFeatures).collect { Double.NaN }
     }
 
     private class FeatureData {
