@@ -16,6 +16,6 @@
 
 package es.unav.oncofuse.classification
 
-public interface Classifier {
+public interface ClassifierWrapper {
     ClassifierResult classify(String schema, double[] features)
 }

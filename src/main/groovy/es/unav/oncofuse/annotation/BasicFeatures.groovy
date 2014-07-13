@@ -41,6 +41,6 @@ class BasicFeatures {
     }
 
     List<Double> listFeatures() {
-        [expr, ffas, pii, utr].flatten()
+        [expr, ffas.collect { Math.log1p(it) }, pii.collect { Math.log1p(it) }, utr].flatten()
     }
 }

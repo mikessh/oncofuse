@@ -20,9 +20,9 @@ import es.unav.oncofuse.annotation.BasicFusionAnnotation
 import es.unav.oncofuse.annotation.BasicTranscriptLevelAnnotation
 
 class BasicFusionClassifier {
-    final Classifier classifier
+    final ClassifierWrapper classifier
 
-    BasicFusionClassifier(Classifier classifier) {
+    BasicFusionClassifier(ClassifierWrapper classifier) {
         this.classifier = classifier
     }
 

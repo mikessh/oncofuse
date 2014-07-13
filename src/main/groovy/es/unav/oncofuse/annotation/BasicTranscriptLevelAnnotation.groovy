@@ -41,6 +41,7 @@ class BasicTranscriptLevelAnnotation {
     }
 
     double[] featureArray() {
-        [retained.listFeatures(), lost.listFeatures()].flatten().toArray(new double[nFeatures])
+        // Last element is the placeholder for class label
+        [retained.listFeatures(), lost.listFeatures(), Double.NaN].flatten().toArray(new double[nFeatures])
     }
 }
