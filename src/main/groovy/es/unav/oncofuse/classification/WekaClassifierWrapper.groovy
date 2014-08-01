@@ -37,7 +37,7 @@ class WekaClassifierWrapper implements ClassifierWrapper {
         //def classifier = new SerializedClassifier()
         //classifier.setModelFile(mdlFile)
 
-        def classifier = (Classifier) SerializationHelper.read(modelFileName)
+        def classifier = (Classifier) SerializationHelper.read(new FileInputStream(mdlFile))
 
         String schema = schemaFile.readLines().findAll { it.startsWith("@") }.join("\n")
 
