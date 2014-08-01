@@ -17,8 +17,8 @@
 package es.unav.oncofuse.legacy
 
 @Grapes(
-	@Grab(group='nz.ac.waikato.cms.weka', module='weka-stable', version='3.6.6')
-	@Grab(group='org.codehaus.gpars', module='gpars', version='1.2.1')
+        @Grab(group = 'nz.ac.waikato.cms.weka', module = 'weka-stable', version = '3.6.6')
+        @Grab(group = 'org.codehaus.gpars', module = 'gpars', version = '1.2.1')
 )
 
 import groovyx.gpars.GParsPool
@@ -208,7 +208,7 @@ switch (inputType) {
             if (!line[0].startsWith("#"))
                 inputData.add("chr" + line[6].split(":")[0..1].collect { it.trim() }.join("\t") + "\tchr"
                         + line[7].split(":")[0..1].collect { it.trim() }.join("\t")
-                        + "\t" + tissueType)
+                        + "\t" + tissueType + "\t$inputFileName\t-1\t-1")
         }
         break
 
@@ -226,7 +226,7 @@ switch (inputType) {
                 println line.size()
                 if (!line[0].startsWith("#") && line.size() > 3 && line[1].startsWith("chr")) {
                     def chrs = line[1].split("-")
-                    inputData.add([chrs[0], line[2], chrs[1], line[3], tissueType, line[0]].join("\t"))
+                    inputData.add([chrs[0], line[2], chrs[1], line[3], tissueType, line[0], -1, -1].join("\t"))
                 }
             }
         else
@@ -235,7 +235,7 @@ switch (inputType) {
                     def chrs = line[0].split("-")
                     int nSpan = Integer.parseInt(line[4]), nSupport = Integer.parseInt(line[5])
                     if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
-                        inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType].join("\t"))
+                        inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType, inputFileName, nSpan, nSupport].join("\t"))
                 }
             }
         break
@@ -296,8 +296,9 @@ switch (inputType) {
         inputData.clear()
 
         sign2counter.each {
-            if (it.value[0].intValue() >= minSpan && (it.value[0].intValue() + it.value[1].intValue()) >= minSum && sign2coord[it.key] != null)
-                inputData.add(sign2coord[it.key])
+            int nSpan = it.value[0].intValue(), nSupport = it.value[1].intValue()
+            if (nSpan >= minSpan && (nSpan + nSupport) >= minSum && sign2coord[it.key] != null)
+                inputData.add(sign2coord[it.key] + "\t" + inputFileName + "\t" + nSpan + "\t" + nSupport)
         }
         println "[${new Date()}] [Post-processing RNASTAR input] Taken $n reads, of them mapped to canonical RefSeq: $k as encompassing, $m as spanning. Total ${sign2coord.size()} exon pairs, of them ${inputData.size()} passed junction coverage filter."
         break
@@ -306,7 +307,7 @@ switch (inputType) {
         def inputFile = new File(inputFileName)
         inputFile.eachLine { line ->
             if (!line.startsWith("#"))
-                inputData.add(line.split("\t").collect { it.trim() }.join("\t"))
+                inputData.add([line.split("\t").collect { it.trim() }, inputFileName, -1, -1].flatten().join("\t"))
         }
         break
 
@@ -324,12 +325,17 @@ println "[${new Date()}] Mapping breakpoints to known genes (this is going to fi
 def i = 0, j = 0
 
 class Fusion {
-    FpgPart fpgPart5, fpgPart3
-    String tissue, sample
-    int id
+    final int nSpan, nSupport
+    final FpgPart fpgPart5, fpgPart3
+    final String tissue, sample
+    final int id
 
-    Fusion(int id, FpgPart fpgPart5, FpgPart fpgPart3, String tissue, String sample) {
+    Fusion(int id, int nSpan, int nSupport,
+           FpgPart fpgPart5, FpgPart fpgPart3,
+           String tissue, String sample) {
         this.id = id
+        this.nSpan = nSpan
+        this.nSupport = nSupport
         this.fpgPart5 = fpgPart5
         this.fpgPart3 = fpgPart3
         this.tissue = tissue
@@ -346,7 +352,8 @@ inputData.each { line ->
     j++
     def splitLine = line.split("\t")
     def coord5 = Integer.parseInt(splitLine[1]), coord3 = Integer.parseInt(splitLine[3])
-    def tissue = splitLine[4].toUpperCase(), sample = splitLine.length == 6 ? splitLine[5] : inputFileName
+    def tissue = splitLine[4].toUpperCase(), sample = splitLine[5]
+    def nSpan = splitLine[6].toInteger(), nSupport = splitLine[7].toInteger()
     def gene5, gene3
     def fpgPart5, fpgPart3
     if (!(gene5 = fetchGene(splitLine[0], coord5)) || !(fpgPart5 = map(true, gene5, coord5))) {
@@ -367,7 +374,7 @@ inputData.each { line ->
     }
 
     if (fpgPart5 && fpgPart3) {
-        fusionList.add(new Fusion(j, fpgPart5, fpgPart3, tissue, sample))
+        fusionList.add(new Fusion(j, nSpan, nSupport, fpgPart5, fpgPart3, tissue, sample))
         def tFpgSet = tissue2FpgMap[tissue]
         if (tFpgSet == null)
             tissue2FpgMap.put(tissue, tFpgSet = new HashSet<FpgPart>())
@@ -804,7 +811,7 @@ classifierResults.each { result ->
 println "[${new Date()}] Writing output"
 new File(outputFileName).withPrintWriter { pw ->
     // Header
-    pw.println(["SAMPLE_ID", "FUSION_ID", "TISSUE", "GENOMIC",
+    pw.println(["SAMPLE_ID", "FUSION_ID", "TISSUE", "SPANNING_READS", "SUPPORTING_READS", "GENOMIC",
                 "5_FPG_GENE_NAME", "5_IN_CDS?", "5_SEGMENT_TYPE", "5_SEGMENT_ID",
                 "5_COORD_IN_SEGMENT", "5_FULL_AA", "5_FRAME",
                 "3_FPG_GENE_NAME", "3_IN_CDS?", "3_SEGMENT_TYPE", "3_SEGMENT_ID",
@@ -825,7 +832,7 @@ new File(outputFileName).withPrintWriter { pw ->
             domainSpecificFeatures3 = fpg2DomainFeaturesMap[fusion.fpgPart3]
         Double expr5 = exprData[fusion.tissue][fusion.fpgPart5.geneName],
                expr3 = exprData[fusion.tissue][fusion.fpgPart3.geneName]
-        pw.println([fusion.sample, fusion.id, fusion.tissue,
+        pw.println([fusion.sample, fusion.id, fusion.tissue, fusion.nSpan, fusion.nSupport,
                     fusion.fpgPart5.chrom + ":" + fusion.fpgPart5.chrCoord + ">" + fusion.fpgPart3.chrom + ":" + fusion.fpgPart3.chrCoord,
                     fusion.fpgPart5.toPrettyString(), fusion.fpgPart3.toPrettyString(),
                     (fusion.fpgPart5.frame + fusion.fpgPart3.frame) % 3,
