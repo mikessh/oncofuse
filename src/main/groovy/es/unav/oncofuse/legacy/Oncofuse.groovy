@@ -16,11 +16,6 @@
 
 package es.unav.oncofuse.legacy
 
-@Grapes(
-        @Grab(group = 'nz.ac.waikato.cms.weka', module = 'weka-stable', version = '3.6.6')
-        @Grab(group = 'org.codehaus.gpars', module = 'gpars', version = '1.2.1')
-)
-
 import groovyx.gpars.GParsPool
 import weka.classifiers.misc.SerializedClassifier
 import weka.core.Instance

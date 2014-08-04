@@ -1,0 +1,37 @@
+GO:0003712~transcription cofactor activity	CTF
+GO:0003713~transcription coactivator activity	CTF
+GO:0003714~transcription corepressor activity	CTF
+GO:0008134~transcription factor binding	CTF
+GO:0016563~transcription activator activity	CTF
+GO:0016564~transcription repressor activity	CTF
+GO:0005083~small GTPase regulator activity	G
+GO:0005085~guanyl-nucleotide exchange factor activity	G
+GO:0005088~Ras guanyl-nucleotide exchange factor activity	G
+GO:0005089~Rho guanyl-nucleotide exchange factor activity	G
+GO:0005096~GTPase activator activity	G
+GO:0005099~Ras GTPase activator activity	G
+GO:0030695~GTPase regulator activity	G
+GO:0051020~GTPase binding	G
+GO:0060589~nucleoside-triphosphatase regulator activity	G
+GO:0004386~helicase activity	H
+GO:0008026~ATP-dependent helicase activity	H
+GO:0004402~histone acetyltransferase activity	H
+GO:0018024~histone-lysine N-methyltransferase activity	H
+GO:0042054~histone methyltransferase activity	H
+GO:0070035~purine NTP-dependent helicase activity	H
+GO:0004672~protein kinase activity	K
+GO:0004674~protein serine/threonine kinase activity	K
+GO:0004713~protein tyrosine kinase activity	K
+GO:0004714~transmembrane receptor protein tyrosine kinase activity	K
+GO:0005070~SH3/SH2 adaptor activity	P
+GO:0019899~enzyme binding	P
+GO:0019901~protein kinase binding	P
+GO:0030674~protein binding, bridging	P
+GO:0042802~identical protein binding	P
+GO:0042803~protein homodimerization activity	P
+GO:0046983~protein dimerization activity	P
+GO:0060090~molecular adaptor activity	P
+GO:0003677~DNA binding	TF
+GO:0003700~transcription factor activity	TF
+GO:0030528~transcription regulator activity	TF
+GO:0043565~sequence-specific DNA binding	TF
