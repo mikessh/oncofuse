@@ -311,8 +311,8 @@ switch (inputType) {
         System.exit(-1)
 }
 if (inputData.size() == 0) {
-    println "No fusions loaded"
-    System.exit(-1)
+    println "[WARNING] No valid fusions in input file!"
+    //System.exit(-1)
 }
 
 // Make a list of fusions
