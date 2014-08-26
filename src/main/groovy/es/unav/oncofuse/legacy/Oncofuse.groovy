@@ -291,9 +291,9 @@ switch (inputType) {
         inputData.clear()
 
         sign2counter.each {
-            int nSpan = it.value[0].intValue(), nSupport = it.value[1].intValue()
-            if (nSpan >= minSpan && (nSpan + nSupport) >= minSum && sign2coord[it.key] != null)
-                inputData.add(sign2coord[it.key] + "\t" + inputFileName + "\t" + nSpan + "\t" + nSupport)
+            int nSpan = it.value[0].intValue(), nEncomp = it.value[1].intValue()
+            if (nSpan >= minSpan && (nSpan + nEncomp) >= minSum && sign2coord[it.key] != null)
+                inputData.add(sign2coord[it.key] + "\t" + inputFileName + "\t" + nSpan + "\t" + nEncomp)
         }
         println "[${new Date()}] [Post-processing RNASTAR input] Taken $n reads, of them mapped to canonical RefSeq: $k as encompassing, $m as spanning. Total ${sign2coord.size()} exon pairs, of them ${inputData.size()} passed junction coverage filter."
         break
@@ -320,17 +320,17 @@ println "[${new Date()}] Mapping breakpoints to known genes (this is going to fi
 def i = 0, j = 0
 
 class Fusion {
-    final int nSpan, nSupport
+    final int nSpan, nEncomp
     final FpgPart fpgPart5, fpgPart3
     final String tissue, sample
     final int id
 
-    Fusion(int id, int nSpan, int nSupport,
+    Fusion(int id, int nSpan, int nEncomp,
            FpgPart fpgPart5, FpgPart fpgPart3,
            String tissue, String sample) {
         this.id = id
         this.nSpan = nSpan
-        this.nSupport = nSupport
+        this.nEncomp = nEncomp
         this.fpgPart5 = fpgPart5
         this.fpgPart3 = fpgPart3
         this.tissue = tissue
@@ -348,7 +348,7 @@ inputData.each { line ->
     def splitLine = line.split("\t")
     def coord5 = Integer.parseInt(splitLine[1]), coord3 = Integer.parseInt(splitLine[3])
     def tissue = splitLine[4].toUpperCase(), sample = splitLine[5]
-    def nSpan = splitLine[6].toInteger(), nSupport = splitLine[7].toInteger()
+    def nSpan = splitLine[6].toInteger(), nEncomp = splitLine[7].toInteger()
     def gene5, gene3
     def fpgPart5, fpgPart3
     if (!(gene5 = fetchGene(splitLine[0], coord5)) || !(fpgPart5 = map(true, gene5, coord5))) {
@@ -369,7 +369,7 @@ inputData.each { line ->
     }
 
     if (fpgPart5 && fpgPart3) {
-        fusionList.add(new Fusion(j, nSpan, nSupport, fpgPart5, fpgPart3, tissue, sample))
+        fusionList.add(new Fusion(j, nSpan, nEncomp, fpgPart5, fpgPart3, tissue, sample))
         def tFpgSet = tissue2FpgMap[tissue]
         if (tFpgSet == null)
             tissue2FpgMap.put(tissue, tFpgSet = new HashSet<FpgPart>())
@@ -806,7 +806,7 @@ classifierResults.each { result ->
 println "[${new Date()}] Writing output"
 new File(outputFileName).withPrintWriter { pw ->
     // Header
-    pw.println(["SAMPLE_ID", "FUSION_ID", "TISSUE", "SPANNING_READS", "SUPPORTING_READS", "GENOMIC",
+    pw.println(["SAMPLE_ID", "FUSION_ID", "TISSUE", "SPANNING_READS", "ENCOMPASSING_READS", "GENOMIC",
                 "5_FPG_GENE_NAME", "5_IN_CDS?", "5_SEGMENT_TYPE", "5_SEGMENT_ID",
                 "5_COORD_IN_SEGMENT", "5_FULL_AA", "5_FRAME",
                 "3_FPG_GENE_NAME", "3_IN_CDS?", "3_SEGMENT_TYPE", "3_SEGMENT_ID",
@@ -827,7 +827,7 @@ new File(outputFileName).withPrintWriter { pw ->
             domainSpecificFeatures3 = fpg2DomainFeaturesMap[fusion.fpgPart3]
         Double expr5 = exprData[fusion.tissue][fusion.fpgPart5.geneName],
                expr3 = exprData[fusion.tissue][fusion.fpgPart3.geneName]
-        pw.println([fusion.sample, fusion.id, fusion.tissue, fusion.nSpan, fusion.nSupport,
+        pw.println([fusion.sample, fusion.id, fusion.tissue, fusion.nSpan, fusion.nEncomp,
                     fusion.fpgPart5.chrom + ":" + fusion.fpgPart5.chrCoord + ">" + fusion.fpgPart3.chrom + ":" + fusion.fpgPart3.chrCoord,
                     fusion.fpgPart5.toPrettyString(), fusion.fpgPart3.toPrettyString(),
                     (fusion.fpgPart5.frame + fusion.fpgPart3.frame) % 3,
