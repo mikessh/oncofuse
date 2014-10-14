@@ -1,5 +1,5 @@
 =========================================================================
-Copyright 2013 Mikhail Shugay et al. (mikhail.shugay@gmail.com)
+Copyright 2013-2014 Mikhail Shugay et al. (mikhail.shugay@gmail.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@ limitations under the License.
 =========================================================================
 
 Oncofuse is a naive bayesian classifier described in:
-Mikhail Shugay, Inigo Ortiz de Mendíbil, Jose L. Vizmanos and Francisco J. Novo. Oncofuse: a computational framework for the prediction of the oncogenic potential of gene fusions. Bioinformatics. 16 Aug 2013. doi:10.1093/bioinformatics/btt445. [Epub ahead of print].
+Mikhail Shugay, Inigo Ortiz de Mendibil, Jose L. Vizmanos and Francisco J. Novo. Oncofuse: a computational framework for the prediction of the oncogenic potential of gene fusions. Bioinformatics. 16 Aug 2013. doi:10.1093/bioinformatics/btt445.
 
 See http://www.unav.es/genetica/oncofuse.html for further details.
 
 ===================
-= ONCOFUSE V1.0.7 =
+= ONCOFUSE V1.0.8 =
 ===================
 
 >WHAT'S NEW
+
+- Version 1.0.8 (Oct-2014) input format for FusionCatcher changed to support v0.99.3b, support for spanning/encompassing read filtering.
 
 - Version 1.0.7 (Jun-Aug-2014) several minor improvements, e.g. reporting number of spanning/encompassing reads in output.
 

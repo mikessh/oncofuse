@@ -29,10 +29,10 @@ def homeDir = new File(getClass().protectionDomain.codeSource.location.path).par
 if (args.length < 4) {
     println "Usage: java -jar Oncofuse.jar input_file input_type tissue_type output_file"
     println "Note: run Java with at least 1Gb of memory (set using -Xmx1G)"
-    println "Supported input types: coord, fcatcher, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M"
+    println "Supported input types: coord, fcatcher, fcatcher-N-M, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M"
     println "Running with input type args: replace N by number of spanning reads and M by number of total supporting read pairs"
     println "Supported tissue types: EPI, HEM, MES, AVG or -"
-    println "Version 1.0.7, 29Jun2014"
+    println "Version 1.0.8, 14Oct2014"
     System.exit(0)
 }
 int THREADS = Runtime.getRuntime().availableProcessors()
@@ -194,97 +194,112 @@ def inputData = new ArrayList<String>()
 println "[${new Date()}] Reading input file"
 
 def inputTypeArgs = inputType.split("-")
+
 inputType = inputTypeArgs[0]
+
+int minSpan = 1, minSum = 2
+
+if (inputTypeArgs.length == 3) {
+    minSpan = Integer.parseInt(inputTypeArgs[1])
+    minSum = Integer.parseInt(inputTypeArgs[2])
+}
 
 switch (inputType) {
     case 'fcatcher':
         def inputFile = new File(inputFileName)
         inputFile.splitEachLine("\t") { line ->
-            if (!line[0].startsWith("#"))
-                inputData.add("chr" + line[6].split(":")[0..1].collect { it.trim() }.join("\t") + "\tchr"
-                        + line[7].split(":")[0..1].collect { it.trim() }.join("\t")
-                        + "\t" + tissueType + "\t$inputFileName\t-1\t-1")
+            try {
+                int nSpan = Integer.parseInt(line[5]), nSupport = Integer.parseInt(line[4])
+                if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
+                    inputData.add("chr" + line[8].split(":")[0..1].collect { it.trim() }.join("\t") + "\tchr"
+                            + line[9].split(":")[0..1].collect { it.trim() }.join("\t")
+                            + "\t" + tissueType + "\t$inputFileName\t-1\t-1")
+            } catch (Exception e) {
+                println "Ignoring line ${line.join("\t")}"
+            }
         }
         break
 
     case 'tophat':
         def inputFile = new File(inputFileName)
-        int minSpan = 1, minSum = 2
-        if (inputTypeArgs.length == 3) {
-            minSpan = Math.max(1, Integer.parseInt(inputTypeArgs[1]))
-            minSum = Integer.parseInt(inputTypeArgs[2])
-        }
 
-        if (inputTypeArgs.length == 2 && inputTypeArgs[1] == 'post')
+        if (inputTypeArgs.length == 2 && inputTypeArgs[1] == 'post') {
             inputFile.splitEachLine("[ \t]") { line ->
-                println line
-                println line.size()
-                if (!line[0].startsWith("#") && line.size() > 3 && line[1].startsWith("chr")) {
-                    def chrs = line[1].split("-")
-                    inputData.add([chrs[0], line[2], chrs[1], line[3], tissueType, line[0], -1, -1].join("\t"))
+                try {
+                    if (line.size() > 3 && line[1].startsWith("chr")) {
+                        def chrs = line[1].split("-")
+                        inputData.add([chrs[0], line[2], chrs[1], line[3], tissueType, line[0], -1, -1].join("\t"))
+                    }
+                }
+                catch (Exception e) {
+                    println "Ignoring line ${line.join("\t")}"
                 }
             }
-        else
+        } else
             inputFile.splitEachLine("\t") { line ->
-                if (!line[0].startsWith("#")) {
+                try {
                     def chrs = line[0].split("-")
                     int nSpan = Integer.parseInt(line[4]), nSupport = Integer.parseInt(line[5])
                     if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
                         inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType, inputFileName, nSpan, nSupport].join("\t"))
+                }
+                catch (Exception e) {
+                    println "Ignoring line ${line.join("\t")}"
                 }
             }
         break
 
     case 'rnastar':
         def inputFile = new File(inputFileName)
-        int minSpan = 1, minSum = 2
-        if (inputTypeArgs.length == 3) {
-            minSpan = Integer.parseInt(inputTypeArgs[1])
-            minSum = Integer.parseInt(inputTypeArgs[2])
-        }
 
         def sign2counter = new ConcurrentHashMap<String, AtomicInteger[]>()
         def sign2coord = new ConcurrentHashMap<String, String>()
-        inputData = inputFile.readLines().findAll { !it.startsWith("#") }
+        inputData = inputFile.readLines()
 
         def n = new AtomicInteger(0), k = new AtomicInteger(0), m = new AtomicInteger(0)
         GParsPool.withPool THREADS, {
             inputData.eachParallel { line ->
                 line = line.split("\t")
                 // Sort reads
-                int type = Integer.parseInt(line[6])
-                String chrom1 = line[0], chrom2 = line[3]
-                int coord1 = Integer.parseInt(line[1]), coord2 = Integer.parseInt(line[4])
-                boolean strand1 = line[2] == "+", strand2 = line[5] == "+"
-                String gene1 = fetchGene(chrom1, coord1)
-                String gene2 = fetchGene(chrom2, coord2)
+                try {
+                    int type = Integer.parseInt(line[6])
+                    String chrom1 = line[0], chrom2 = line[3]
+                    int coord1 = Integer.parseInt(line[1]), coord2 = Integer.parseInt(line[4])
+                    boolean strand1 = line[2] == "+", strand2 = line[5] == "+"
 
-                if (gene1 != null && gene2 != null) {
-                    def map1 = map(false, gene1, coord1 + (strand1 ? -1 : 1)),
-                        map2 = map(false, gene2, coord2 + (strand1 ? 1 : -1))
-                    if (map1 != null && map1.exon && map2 != null && map2.exon) {
-                        exon1 = map1.segmentId
-                        exon2 = map2.segmentId
-                        String signature = [gene1, exon1, gene2, exon2].join("\t")
+                    String gene1 = fetchGene(chrom1, coord1)
+                    String gene2 = fetchGene(chrom2, coord2)
 
-                        def counter = new AtomicInteger[2]
-                        counter[0] = new AtomicInteger(0)
-                        counter[1] = new AtomicInteger(0)
-                        counter = sign2counter.putIfAbsent(signature, counter) ?: counter
+                    if (gene1 != null && gene2 != null) {
+                        def map1 = map(false, gene1, coord1 + (strand1 ? -1 : 1)),
+                            map2 = map(false, gene2, coord2 + (strand1 ? 1 : -1))
+                        if (map1 != null && map1.exon && map2 != null && map2.exon) {
+                            exon1 = map1.segmentId
+                            exon2 = map2.segmentId
+                            String signature = [gene1, exon1, gene2, exon2].join("\t")
 
-                        if (type < 0) {
-                            counter[1].incrementAndGet()
-                            k.incrementAndGet()
-                        } else {
-                            sign2coord.putIfAbsent(signature, [chrom1, coord1, chrom2, coord2, tissueType].join("\t"))
-                            counter[0].incrementAndGet()
-                            m.incrementAndGet()
+                            def counter = new AtomicInteger[2]
+                            counter[0] = new AtomicInteger(0)
+                            counter[1] = new AtomicInteger(0)
+                            counter = sign2counter.putIfAbsent(signature, counter) ?: counter
+
+                            if (type < 0) {
+                                counter[1].incrementAndGet()
+                                k.incrementAndGet()
+                            } else {
+                                sign2coord.putIfAbsent(signature, [chrom1, coord1, chrom2, coord2, tissueType].join("\t"))
+                                counter[0].incrementAndGet()
+                                m.incrementAndGet()
+                            }
                         }
                     }
+                    def nn = n.incrementAndGet()
+                    if (nn % 100000 == 0)
+                        println "[${new Date()}] [Post-processing RNASTAR input] $nn reads analyzed"
                 }
-                def nn = n.incrementAndGet()
-                if (nn % 100000 == 0)
-                    println "[${new Date()}] [Post-processing RNASTAR input] $nn reads analyzed"
+                catch (Exception e) {
+                    println "Ignoring line ${line.join("\t")}"
+                }
             }
         }
 

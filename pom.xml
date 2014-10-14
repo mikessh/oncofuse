@@ -4,7 +4,7 @@
 
     <groupId>es.unav</groupId>
     <artifactId>oncofuse</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <packaging>jar</packaging>
 
     <name>oncofuse</name>
