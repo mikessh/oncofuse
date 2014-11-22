@@ -73,7 +73,7 @@
                 <version>1.7</version>
                 <executions>
                     <execution>
-                        <phase>compile</phase>
+                        <phase>install</phase>
                         <configuration>
                             <tasks>
                                 <copy todir="${project.build.directory}">
@@ -81,6 +81,10 @@
                                         <include name="**/**"/>
                                     </fileset>
                                 </copy>
+                                <zip destfile="${project.basedir}/${project.build.finalName}.zip">
+                                    <fileset dir="${project.build.directory}"
+                                             includes="libs/**,common/**,${project.build.finalName}.${project.packaging}"/>
+                                </zip>
                             </tasks>
                         </configuration>
                         <goals>

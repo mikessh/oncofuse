@@ -2,5 +2,5 @@
 *.iml
 target/
 dependency-reduced-pom.xml
-oncofuse-v*.zip
-oncofuse-v*/
+oncofuse-*.zip
+oncofuse-*/
