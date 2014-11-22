@@ -1,50 +1,77 @@
-/**
- Copyright 2013-14 Mikhail Shugay (mikhail.shugay@gmail.com)
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+/*
+ * Copyright 2013-2014 Mikhail Shugay (mikhail.shugay@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Last modified on 22.11.2014 by mikesh
  */
 
 package es.unav.oncofuse.legacy
 
 import groovyx.gpars.GParsPool
-import weka.classifiers.misc.SerializedClassifier
-import weka.core.Instance
-import weka.core.Instances
-import weka.core.converters.ArffLoader
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-def homeDir = new File(getClass().protectionDomain.codeSource.location.path).parent.replaceAll("%20", " ")
-if (args.length < 4) {
-    println "Usage: java -jar Oncofuse.jar input_file input_type tissue_type output_file"
-    println "Note: run Java with at least 1Gb of memory (set using -Xmx1G)"
-    println "Supported input types: coord, fcatcher, fcatcher-N-M, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M"
-    println "Running with input type args: replace N by number of spanning reads and M by number of total supporting read pairs"
-    println "Supported tissue types: EPI, HEM, MES, AVG or -"
-    println "Version 1.0.8, 14Oct2014"
-    System.exit(0)
+def cli = new CliBuilder(usage:
+        "java -Xmx4G -jar Oncofuse.jar [options] input_file input_type [tissue_type or -] output_file\n" +
+                "Supported input types: coord, fcatcher, fcatcher-N-M, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M\n" +
+                "Running with input type args: replace N by number of spanning reads and M by number of total supporting read pairs\n" +
+                "Supported tissue types: EPI, HEM, MES, AVG or -\n" +
+                "Version 1.0.8, 14Oct2014")
+cli.h("display help message")
+cli.a(argName: "hgX", args: 1, "Genome assembly version, default is hg19.")
+cli.p(argName: "integer", args: 1, "Number of threads, uses all available processors by default")
+
+def opt = cli.parse(args)
+
+if (opt == null)
+    System.exit(-1)
+
+if (opt.h || opt.arguments().size() != 4) {
+    cli.usage()
+    System.exit(-1)
 }
-int THREADS = Runtime.getRuntime().availableProcessors()
+
 def inputFileName = args[0], inputType = args[1], tissueType = args[2], outputFileName = args[3]
+def THREADS = (opt.p ?: "${Runtime.getRuntime().availableProcessors()}").toInteger()
+def hgX = opt.a ?: "hg19"
+
 if (!new File(inputFileName).exists()) {
-    println "[ERROR] Input file not found"
+    println "[ERROR] Input file not found, $inputFileName"
     System.exit(1)
 }
 if (!['EPI', 'HEM', 'MES', 'AVG', '-'].any { tissueType == it }) {
-    println "[ERROR] Unrecognized tissue type"
+    println "[ERROR] Unrecognized tissue type, $tissueType"
     System.exit(1)
 }
+if (!['hg19', 'hg18'.any { hgX == it }]) {
+    println "[ERROR] Unrecognized genome assembly, $hgX"
+    System.exit(1)
+}
+
+// Input files
+
+def homeDir = new File(getClass().protectionDomain.codeSource.location.path).parent.replaceAll("%20", " ")
+def canonicalTranscriptsFileName = "$homeDir/common/refseq_canonical.txt",
+    refseqFileName = "$homeDir/common/refseq_full_${hgX}.txt"
+def libs = new File("$homeDir/libs").listFiles().findAll { it.isDirectory() && !it.isHidden() }.collect { it.name }
+def domainsFileName = "$homeDir/common/domains.txt", domainAnnotFileName = "$homeDir/common/interpro_annot.txt",
+    piisFileName = "$homeDir/common/piis.txt"
+def gene2DavidIdFileName = "$homeDir/common/gene_symbol2id.txt", davidIdExpandFileName = "$homeDir/common/id_expand.txt",
+    davidId2GOIdFileName = "$homeDir/common/id2go.txt", ffasRangesFileName = "$homeDir/common/ffas_range.txt",
+    go2themeFileName = "$homeDir/common/go2theme.txt"
+def schemaFileName = "$homeDir/nbn_schema", classifierFileName = "$homeDir/common/class"
 
 /////////////////////////////////////////
 // LOADING BKPT POSITIONS AND MAPPING //
@@ -61,7 +88,6 @@ def geneByChrom = new HashMap<String, List<String>>()
 def transcriptStartCoords = new HashMap<String, Integer>(), transcriptEndCoords = new HashMap<String, Integer>()
 def cdsStartCoords = new HashMap<String, Integer>(), cdsEndCoords = new HashMap<String, Integer>()
 
-def canonicalTranscriptsFileName = "$homeDir/common/refseq_canonical.txt", refseqFileName = "$homeDir/common/refseq_full.txt"
 def canonicalTranscripts = new HashSet<String>(new File(canonicalTranscriptsFileName).readLines())
 def gene2chr = new HashMap<String, String>()
 
@@ -89,51 +115,6 @@ new File(refseqFileName).splitEachLine('\t') { splitLine ->
 }
 
 // Routines for mapping
-class FpgPart {
-    String chrom
-    int chrCoord
-    String geneName
-    boolean fivePrimeFpg
-    boolean exon
-    int segmentId, coord, aaPos, frame, fullLen
-    boolean cds
-    String signature
-
-    FpgPart(String chrom, int chrCoord, String geneName, boolean fivePrimeFpg, boolean exon, int segmentId, int coord, int aaPos, int frame, int fullLen) {
-        this.chrom = chrom
-        this.chrCoord = chrCoord
-        this.geneName = geneName
-        this.fivePrimeFpg = fivePrimeFpg
-        this.cds = aaPos > 0 && aaPos < fullLen && coord >= 0
-        this.exon = exon
-        this.segmentId = segmentId
-        this.coord = coord
-        this.aaPos = aaPos
-        this.frame = frame
-        this.fullLen = fullLen
-        this.signature = "$geneName\t$fivePrimeFpg\t$exon\t$segmentId\t$coord"
-    }
-
-    String toPrettyString() {
-        return [geneName, cds ? "Yes" : "No", exon ? "Exon" : "Intron", segmentId, coord, fivePrimeFpg ? aaPos : fullLen - aaPos, frame].join("\t")
-    }
-
-    @Override
-    String toString() {
-        return signature
-    }
-
-    @Override
-    int hashCode() {
-        return this.signature.hashCode()
-    }
-
-    @Override
-    boolean equals(Object obj) {
-        return this.signature.equals((obj as FpgPart).signature)
-    }
-}
-
 def fetchGene = { String chrom, int coord ->
     def geneList = geneByChrom[chrom]
     def gene = geneList.find {
@@ -333,26 +314,6 @@ if (inputData.size() == 0) {
 // Make a list of fusions
 println "[${new Date()}] Mapping breakpoints to known genes (this is going to filter a lot)"
 def i = 0, j = 0
-
-class Fusion {
-    final int nSpan, nEncomp
-    final FpgPart fpgPart5, fpgPart3
-    final String tissue, sample
-    final int id
-
-    Fusion(int id, int nSpan, int nEncomp,
-           FpgPart fpgPart5, FpgPart fpgPart3,
-           String tissue, String sample) {
-        this.id = id
-        this.nSpan = nSpan
-        this.nEncomp = nEncomp
-        this.fpgPart5 = fpgPart5
-        this.fpgPart3 = fpgPart3
-        this.tissue = tissue
-        this.sample = sample
-    }
-}
-
 def fusionList = new ArrayList<Fusion>()
 def tissue2FpgMap = new HashMap<String, Set<FpgPart>>()
 def fpgSet = new HashSet<FpgPart>()
@@ -404,22 +365,21 @@ println "[${new Date()}] Getting features for FPG parts"
 
 // Expression data
 println "[${new Date()}] Loading expression-related data"
-def libs = new File("$homeDir/libs").listFiles().findAll { it.isDirectory() && !it.isHidden() }.collect { it.name }
 def promData = new HashMap<String, Map<String, List<Double>>>(),
     exprData = new HashMap<String, Map<String, Double>>(),
     utrData = new HashMap<String, Map<String, List<Double>>>()
 libs.each { lib ->
     lib = lib.toUpperCase()
     promData.put(lib, new HashMap<String, List<Double>>())
-    new File("$homeDir/libs/$lib/prom.txt").splitEachLine("\t") { line ->
+    new File("$homeDir/libs/$lib/prom.txt").splitEachLine("\t") { List<String> line ->
         promData[lib].put(line[0], line[1..(line.size() - 1)].collect { Double.parseDouble(it) })
     }
     exprData.put(lib, new HashMap<String, Double>())
-    new File("$homeDir/libs/$lib/expr.txt").splitEachLine("\t") { line ->
+    new File("$homeDir/libs/$lib/expr.txt").splitEachLine("\t") { List<String> line ->
         exprData[lib].put(line[0], Double.parseDouble(line[1]))
     }
     utrData.put(lib, new HashMap<String, List<Double>>())
-    new File("$homeDir/libs/$lib/utr.txt").splitEachLine("\t") { line ->
+    new File("$homeDir/libs/$lib/utr.txt").splitEachLine("\t") { List<String> line ->
         utrData[lib].put(line[0], line[1..(line.size() - 1)].collect { Double.parseDouble(it) })
     }
 }
@@ -427,22 +387,7 @@ int nPromFeatures = promData.iterator().next().value.iterator().next().value.siz
     nUTRFeatures = utrData.iterator().next().value.iterator().next().value.size()
 
 // Domain and PII data
-def domainsFileName = "$homeDir/common/domains.txt", domainAnnotFileName = "$homeDir/common/interpro_annot.txt",
-    piisFileName = "$homeDir/common/piis.txt"
 println "[${new Date()}] Loading domain and protein interaction interface-related data"
-
-class Feature {
-    String parentGene
-    int aaFrom, aaTo
-    String featureId
-
-    Feature(String parentGene, int aaFrom, int aaTo, String featureId) {
-        this.parentGene = parentGene
-        this.aaFrom = aaFrom
-        this.aaTo = aaTo
-        this.featureId = featureId
-    }
-}
 
 def domainData = new HashMap<String, List<Feature>>(), piiData = new HashMap<String, List<Feature>>()
 def domain2genes = new HashMap<String, List<String>>() // for GO mapping
@@ -471,9 +416,6 @@ new File(domainAnnotFileName).splitEachLine("\t") { line ->
 /////////////////////////
 // Gene ontology data //
 ///////////////////////
-def gene2DavidIdFileName = "$homeDir/common/gene_symbol2id.txt", davidIdExpandFileName = "$homeDir/common/id_expand.txt",
-    davidId2GOIdFileName = "$homeDir/common/id2go.txt", ffasRangesFileName = "$homeDir/common/ffas_range.txt",
-    go2themeFileName = "$homeDir/common/go2theme.txt"
 println "[${new Date()}] Loading gene ontology data (time-consuming)"
 
 // Id as in DAVID
@@ -533,26 +475,6 @@ println "[${new Date()}] Annotating FPG parts"
 
 def tissue2fpg2TSFeaturesMap = new HashMap<String, Map<FpgPart, TissueSpecificFeatures>>()
 def fpg2DomainFeaturesMap = Collections.synchronizedMap(new HashMap<FpgPart, DomainFeatures>())
-
-class TissueSpecificFeatures {
-    // Stage 1:
-    List<Double> promFeatures
-    List<Double> utrFeatures
-
-    // Stage 2:
-    double piiExprRetained, piiExprLost
-}
-
-class DomainFeatures {
-    // Stage 1:
-    def domainsRetained = new HashSet<String>(), domainsLost = new HashSet<String>(), domainsBroken = new HashSet<String>()
-    def piisRetained = new ArrayList<String>(), piisLost = new ArrayList<String>()
-
-    // Stage 2:
-    int nSelfPIIsRetained = 0, nSelfPIIsLost = 0
-    int nPIIsRetained, nPIIsLost
-    double[] domainProfileRetained, domainProfileLost, domainProfileBroken
-}
 
 println "[${new Date()}] =Stage #1: raw data"
 
@@ -681,71 +603,6 @@ tissue2fpg2TSFeaturesMap.each { tissueEntry ->
 // Prepare classifier //
 ///////////////////////
 println "[${new Date()}] Initializing classifier"
-def schemaFileName = "$homeDir/nbn_schema", classifierFileName = "$homeDir/common/class"
-
-// Wrapper
-class ClassifierWrapper {
-    Instances trainingData
-    SerializedClassifier sc
-    String schema = "@RELATION ONCOFUSE\n" +
-            "@ATTRIBUTE\t5_r_prom1\tNUMERIC\n" +
-            "@ATTRIBUTE\t5_r_prom2\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_self_pii\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_pii\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_pii_expr\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_CTF\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_G\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_H\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_K\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_P\tNUMERIC\n" +
-            "@ATTRIBUTE\tr_TF\tNUMERIC\n" +
-            "@ATTRIBUTE\t3_r_utr1\tNUMERIC\t\n" +
-            "@ATTRIBUTE\tb_CTF\tNUMERIC\n" +
-            "@ATTRIBUTE\tb_G\tNUMERIC\n" +
-            "@ATTRIBUTE\tb_H\tNUMERIC\n" +
-            "@ATTRIBUTE\tb_K\tNUMERIC\n" +
-            "@ATTRIBUTE\tb_P\tNUMERIC\n" +
-            "@ATTRIBUTE\tb_TF\tNUMERIC\t\n" +
-            "@ATTRIBUTE\t3_l_prom1\tNUMERIC\n" +
-            "@ATTRIBUTE\t3_l_prom2\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_self_pii\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_pii\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_pii_expr\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_CTF\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_G\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_H\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_K\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_P\tNUMERIC\n" +
-            "@ATTRIBUTE\tl_TF\tNUMERIC\n" +
-            "@ATTRIBUTE\t5_l_utr1\tNUMERIC\n" +
-            "@ATTRIBUTE\tclass\t{0,1}\n" +
-            "@DATA"
-
-    ClassifierWrapper(String trainingSetFname, String model) {
-        sc = new SerializedClassifier()
-        sc.setModelFile(new File(model))
-
-        ArffLoader loader = new ArffLoader()
-        //loader.setFile(new File(trainingSetFname))
-        loader.setSource(new ByteArrayInputStream(schema.getBytes()))
-        trainingData = loader.getDataSet()
-        trainingData.setClassIndex(trainingData.numAttributes() - 1)
-    }
-
-    private Instance fusion2Instance(List<Double> featureVector) {
-        double[] arr = new double[featureVector.size()]
-        featureVector.eachWithIndex { it, ind -> arr[ind] = it }
-        Instance inst = new Instance(1.0, arr)
-        featureVector.eachWithIndex { it, ind -> if (Double.isNaN(it)) inst.setMissing(ind) }
-        inst.setDataset(trainingData)
-        return inst
-    }
-
-    double[] getPValue(List<Double> featureVector) {
-        sc.distributionForInstance(fusion2Instance(featureVector))
-    }
-}
-
 def classifier = new ClassifierWrapper(schemaFileName, classifierFileName)
 
 // No parsing of schema, this is fixed to layout of oncofuseV3
