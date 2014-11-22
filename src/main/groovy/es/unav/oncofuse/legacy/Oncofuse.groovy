@@ -16,6 +16,7 @@
  * Last modified on 22.11.2014 by mikesh
  */
 
+
 package es.unav.oncofuse.legacy
 
 import groovyx.gpars.GParsPool
@@ -24,14 +25,19 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 def cli = new CliBuilder(usage:
-        "java -Xmx4G -jar Oncofuse.jar [options] input_file input_type [tissue_type or -] output_file\n" +
-                "Supported input types: coord, fcatcher, fcatcher-N-M, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M\n" +
-                "Running with input type args: replace N by number of spanning reads and M by number of total supporting read pairs\n" +
-                "Supported tissue types: EPI, HEM, MES, AVG or -\n" +
-                "Version 1.0.8, 14Oct2014")
+        "Oncofuse.jar [options] input_file input_type [tissue_type or -] output_file\n" +
+                "Supported input types: " +
+                "coord, fcatcher, fcatcher-N-M, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M\n" +
+                "Running with input type args: " +
+                "replace N by number of spanning reads and M by number of total supporting read pairs\n" +
+                "Supported tissue types: " +
+                "EPI, HEM, MES, AVG or -\n" +
+                "Version 1.0.9, 22Nov2014\n")
 cli.h("display help message")
-cli.a(argName: "hgX", args: 1, "Genome assembly version, default is hg19.")
+cli.a(argName: "hgXX", args: 1, "Genome assembly version, default is hg19.")
 cli.p(argName: "integer", args: 1, "Number of threads, uses all available processors by default")
+
+cli.width = 100
 
 def opt = cli.parse(args)
 
@@ -43,35 +49,53 @@ if (opt.h || opt.arguments().size() != 4) {
     System.exit(-1)
 }
 
-def inputFileName = args[0], inputType = args[1], tissueType = args[2], outputFileName = args[3]
+def inputFileName = opt.arguments()[0],
+    inputType = opt.arguments()[1],
+    tissueType = opt.arguments()[2],
+    outputFileName = opt.arguments()[3]
 def THREADS = (opt.p ?: "${Runtime.getRuntime().availableProcessors()}").toInteger()
 def hgX = opt.a ?: "hg19"
+
+// Check if library is in place
+
+def homeDir = new File(getClass().protectionDomain.codeSource.location.path).parent.replaceAll("%20", " ")
+def canonicalTranscriptsFileName = "$homeDir/common/refseq_canonical.txt",
+    refseqFileName = "$homeDir/common/refseq_full_${hgX}.txt"
+def libFolderName = "$homeDir/libs"
+def domainsFileName = "$homeDir/common/domains.txt", domainAnnotFileName = "$homeDir/common/interpro_annot.txt",
+    piisFileName = "$homeDir/common/piis.txt"
+def gene2DavidIdFileName = "$homeDir/common/gene_symbol2id.txt", davidIdExpandFileName = "$homeDir/common/id_expand.txt",
+    davidId2GOIdFileName = "$homeDir/common/id2go.txt", ffasRangesFileName = "$homeDir/common/ffas_range.txt",
+    go2themeFileName = "$homeDir/common/go2theme.txt"
+def schemaFileName = "$homeDir/common/nbn_schema", classifierFileName = "$homeDir/common/class"
+
+def missing = [canonicalTranscriptsFileName, refseqFileName, libFolderName,
+               domainsFileName, domainAnnotFileName, piisFileName,
+               gene2DavidIdFileName, davidIdExpandFileName, davidId2GOIdFileName, ffasRangesFileName, go2themeFileName,
+               schemaFileName, classifierFileName].findAll { !new File(it).exists() }
+
+if (missing.size() > 0) {
+    println "[ERROR] The following resources are missing:\n"
+    println missing.join("\n")
+    System.exit(1)
+}
+
+def libs = new File(libFolderName).listFiles().findAll { it.isDirectory() && !it.isHidden() }.collect { it.name }
 
 if (!new File(inputFileName).exists()) {
     println "[ERROR] Input file not found, $inputFileName"
     System.exit(1)
 }
-if (!['EPI', 'HEM', 'MES', 'AVG', '-'].any { tissueType == it }) {
-    println "[ERROR] Unrecognized tissue type, $tissueType"
+def allowedTissueTypes = [libs.collect { it.toUpperCase() }, '-'].flatten()
+if (!allowedTissueTypes.any { tissueType == it }) {
+    println "[ERROR] Unrecognized tissue type, $tissueType. " +
+            "Allowed tissue types are: ${allowedTissueTypes.join(", ")}"
     System.exit(1)
 }
 if (!['hg19', 'hg18'.any { hgX == it }]) {
     println "[ERROR] Unrecognized genome assembly, $hgX"
     System.exit(1)
 }
-
-// Input files
-
-def homeDir = new File(getClass().protectionDomain.codeSource.location.path).parent.replaceAll("%20", " ")
-def canonicalTranscriptsFileName = "$homeDir/common/refseq_canonical.txt",
-    refseqFileName = "$homeDir/common/refseq_full_${hgX}.txt"
-def libs = new File("$homeDir/libs").listFiles().findAll { it.isDirectory() && !it.isHidden() }.collect { it.name }
-def domainsFileName = "$homeDir/common/domains.txt", domainAnnotFileName = "$homeDir/common/interpro_annot.txt",
-    piisFileName = "$homeDir/common/piis.txt"
-def gene2DavidIdFileName = "$homeDir/common/gene_symbol2id.txt", davidIdExpandFileName = "$homeDir/common/id_expand.txt",
-    davidId2GOIdFileName = "$homeDir/common/id2go.txt", ffasRangesFileName = "$homeDir/common/ffas_range.txt",
-    go2themeFileName = "$homeDir/common/go2theme.txt"
-def schemaFileName = "$homeDir/nbn_schema", classifierFileName = "$homeDir/common/class"
 
 /////////////////////////////////////////
 // LOADING BKPT POSITIONS AND MAPPING //
@@ -303,7 +327,7 @@ switch (inputType) {
         break
 
     default:
-        println "Unknown input format"
+        println "[ERROR] Unknown input format, $inputType"
         System.exit(-1)
 }
 if (inputData.size() == 0) {
@@ -370,16 +394,28 @@ def promData = new HashMap<String, Map<String, List<Double>>>(),
     utrData = new HashMap<String, Map<String, List<Double>>>()
 libs.each { lib ->
     lib = lib.toUpperCase()
+    def promFileName = "$homeDir/libs/$lib/prom.txt",
+        exprFileName = "$homeDir/libs/$lib/expr.txt",
+        utrFileName = "$homeDir/libs/$lib/utr.txt"
+
+    missing = [promFileName, exprFileName, utrFileName].findAll { !new File(it).exists() }
+
+    if (missing.size() > 0) {
+        println "[ERROR] Library $lib is incomplete, the following files are missing:\n"
+        println missing.join("\n")
+        System.exit(-1)
+    }
+
     promData.put(lib, new HashMap<String, List<Double>>())
-    new File("$homeDir/libs/$lib/prom.txt").splitEachLine("\t") { List<String> line ->
+    new File(promFileName).splitEachLine("\t") { List<String> line ->
         promData[lib].put(line[0], line[1..(line.size() - 1)].collect { Double.parseDouble(it) })
     }
     exprData.put(lib, new HashMap<String, Double>())
-    new File("$homeDir/libs/$lib/expr.txt").splitEachLine("\t") { List<String> line ->
+    new File(exprFileName).splitEachLine("\t") { List<String> line ->
         exprData[lib].put(line[0], Double.parseDouble(line[1]))
     }
     utrData.put(lib, new HashMap<String, List<Double>>())
-    new File("$homeDir/libs/$lib/utr.txt").splitEachLine("\t") { List<String> line ->
+    new File(utrFileName).splitEachLine("\t") { List<String> line ->
         utrData[lib].put(line[0], line[1..(line.size() - 1)].collect { Double.parseDouble(it) })
     }
 }
