@@ -1,29 +1,18 @@
-=========================================================================
-Copyright 2013-2014 Mikhail Shugay et al. (mikhail.shugay@gmail.com)
+===================
+= ONCOFUSE V1.0.9 =
+===================
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Oncofuse is a framework designed to estimate the oncogenic potential of de-novo discovered gene fusions. It uses several hallmark features and employs a bayesian classifier to provide the probability of a given gene fusion being a driver mutation.
 
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-=========================================================================
-
-Oncofuse is a naive bayesian classifier described in:
+Oncofuse is described in the following paper:
 Mikhail Shugay, Inigo Ortiz de Mendibil, Jose L. Vizmanos and Francisco J. Novo. Oncofuse: a computational framework for the prediction of the oncogenic potential of gene fusions. Bioinformatics. 16 Aug 2013. doi:10.1093/bioinformatics/btt445.
 
 See http://www.unav.es/genetica/oncofuse.html for further details.
 
-===================
-= ONCOFUSE V1.0.8 =
-===================
 
 >WHAT'S NEW
+
+- Version 1.0.9 (Nov-2014) minor improvements, support for hg18, hg19 and hg38 genome assemblies. ALWAYS check the coordinate system
 
 - Version 1.0.8 (Oct-2014) input format for FusionCatcher changed to support v0.99.3b, support for spanning/encompassing read filtering.
 
@@ -36,6 +25,13 @@ See http://www.unav.es/genetica/oncofuse.html for further details.
 - Version 1.0.4 has extended the output format and supports tophat-fusion-post and RNASTAR input.
 
 - As from version 1.0.3, installation of Groovy is not necessary. Input file types and the content of output file have also been improved. 
+
+
+>OPTIONS
+
+-p option specifies the number of threads Oncofuse will use
+
+-a option specifies genome assembly version. Allowed values: hg18, hg19 and hg38. Default value: hg19
 
 
 >INPUT
@@ -68,6 +64,7 @@ input_type = "rnastar"
 
 Default output file of RNASTAR software. Data is pre-filtered based on number of spanning N>=1 and total number of supporting reads M>=2 reads. These parameters could be changed with extended input type argument "rnastar-N-M". Tissue type has to be set using tissue_type argument.
 
+
 >OUTPUT
 
 A tab-delimited table with the following columns
@@ -90,7 +87,7 @@ ENCOMPASSING_READS	Number of reads that map discordantly with one mate mapping t
 
 (Same as 7 lines above for the 3' fusion partner gene)
 
-FPG_FRAME_DIFFERENCE	Difference in 5' and 3' FPG frames
+FPG_FRAME_DIFFERENCE	The resulting frame of fusion gene, if equals to 0 then the fusion is in-frame
 
 P_VAL_CORR	The Bayesian probability of fusion being a passenger (class 0), given as Bonferroni-corrected P-value
 DRIVER_PROB	The Bayesian probability of fusion being a driver (class 1)
