@@ -24,6 +24,8 @@ import groovyx.gpars.GParsPool
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
+def A_DEFAULT = "hg19", A_ALLOWED = ["hg18", "hg19", "hg38"]
+
 def cli = new CliBuilder(usage:
         "Oncofuse.jar [options] input_file input_type [tissue_type or -] output_file\n" +
                 "Supported input types: " +
@@ -34,7 +36,8 @@ def cli = new CliBuilder(usage:
                 "EPI, HEM, MES, AVG or -\n" +
                 "Version 1.0.9, 22Nov2014\n")
 cli.h("display help message")
-cli.a(argName: "hgXX", args: 1, "Genome assembly version, default is hg19.")
+cli.a(argName: "hgXX", args: 1, "Genome assembly version, default is $A_DEFAULT. " +
+        "Allowed values: ${A_ALLOWED.join(", ")}")
 cli.p(argName: "integer", args: 1, "Number of threads, uses all available processors by default")
 
 cli.width = 100
@@ -54,7 +57,19 @@ def inputFileName = opt.arguments()[0],
     tissueType = opt.arguments()[2],
     outputFileName = opt.arguments()[3]
 def THREADS = (opt.p ?: "${Runtime.getRuntime().availableProcessors()}").toInteger()
-def hgX = opt.a ?: "hg19"
+def hgX = opt.a ?: A_DEFAULT
+
+// General checks
+
+if (!new File(inputFileName).exists()) {
+    println "[ERROR] Input file not found, $inputFileName"
+    System.exit(1)
+}
+
+if (!A_ALLOWED.any {it==hgX}){
+    println "[ERROR] Unrecognized genome assembly, $hgX"
+    System.exit(1)
+}
 
 // Check if library is in place
 
@@ -80,20 +95,14 @@ if (missing.size() > 0) {
     System.exit(1)
 }
 
+// Tissue type checks
+
 def libs = new File(libFolderName).listFiles().findAll { it.isDirectory() && !it.isHidden() }.collect { it.name }
 
-if (!new File(inputFileName).exists()) {
-    println "[ERROR] Input file not found, $inputFileName"
-    System.exit(1)
-}
 def allowedTissueTypes = [libs.collect { it.toUpperCase() }, '-'].flatten()
 if (!allowedTissueTypes.any { tissueType == it }) {
     println "[ERROR] Unrecognized tissue type, $tissueType. " +
             "Allowed tissue types are: ${allowedTissueTypes.join(", ")}"
-    System.exit(1)
-}
-if (!['hg19', 'hg18'.any { hgX == it }]) {
-    println "[ERROR] Unrecognized genome assembly, $hgX"
     System.exit(1)
 }
 
