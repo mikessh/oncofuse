@@ -4,7 +4,7 @@
 
     <groupId>es.unav</groupId>
     <artifactId>oncofuse</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
     <packaging>jar</packaging>
 
     <name>oncofuse</name>
@@ -44,6 +44,8 @@
                 <version>3.1</version>
                 <configuration>
                     <compilerId>groovy-eclipse-compiler</compilerId>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
                 <dependencies>
                     <dependency>
