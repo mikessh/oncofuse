@@ -2,12 +2,14 @@
 = ONCOFUSE V1.0.9 =
 ===================
 
+
 Oncofuse is a framework designed to estimate the oncogenic potential of de-novo discovered gene fusions. It uses several hallmark features and employs a bayesian classifier to provide the probability of a given gene fusion being a driver mutation.
 
 Oncofuse is described in the following paper:
 Mikhail Shugay, Inigo Ortiz de Mendibil, Jose L. Vizmanos and Francisco J. Novo. Oncofuse: a computational framework for the prediction of the oncogenic potential of gene fusions. Bioinformatics. 16 Aug 2013. doi:10.1093/bioinformatics/btt445.
 
 See http://www.unav.es/genetica/oncofuse.html for further details.
+
 
 
 >WHAT'S NEW
@@ -27,11 +29,13 @@ See http://www.unav.es/genetica/oncofuse.html for further details.
 - As from version 1.0.3, installation of Groovy is not necessary. Input file types and the content of output file have also been improved. 
 
 
+
 >OPTIONS
 
 -p option specifies the number of threads Oncofuse will use
 
 -a option specifies genome assembly version. Allowed values: hg18, hg19 and hg38. Default value: hg19
+
 
 
 >INPUT
@@ -63,6 +67,7 @@ Default output file of FusionCatcher software. Tissue type has to be set using t
 input_type = "rnastar"
 
 Default output file of RNASTAR software. Data is pre-filtered based on number of spanning N>=1 and total number of supporting reads M>=2 reads. These parameters could be changed with extended input type argument "rnastar-N-M". Tissue type has to be set using tissue_type argument.
+
 
 
 >OUTPUT

@@ -82,8 +82,15 @@
                                     </fileset>
                                 </copy>
                                 <zip destfile="${project.basedir}/${project.build.finalName}.zip">
-                                    <fileset dir="${project.build.directory}"
-                                             includes="libs/**,common/**,${project.build.finalName}.${project.packaging}"/>
+                                    <zipfileset dir="${project.build.directory}"
+                                                includes="libs/**,common/**,example/**"
+                                                prefix="${project.build.finalName}"/>
+                                    <zipfileset dir="${project.build.directory}"
+                                                includes="${project.build.finalName}.jar"
+                                                fullpath="${project.build.finalName}/Oncofuse.jar"/>
+                                    <zipfileset dir="${project.basedir}"
+                                                includes="README.txt,LICENCE.txt"
+                                                prefix="${project.build.finalName}"/>
                                 </zip>
                             </tasks>
                         </configuration>
