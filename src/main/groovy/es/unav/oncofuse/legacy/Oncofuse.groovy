@@ -274,7 +274,7 @@ switch (inputType) {
         GParsPool.withPool THREADS, {
             inputData.eachParallel { line ->
                 line = line.split("\t")
-                // Sort reads
+                // Here we collapse reads
                 try {
                     int type = Integer.parseInt(line[6])
                     String chrom1 = line[0], chrom2 = line[3]
@@ -328,10 +328,23 @@ switch (inputType) {
         break
 
     case 'coord':
+        def coordMap = new HashMap<String, int[]>()
         def inputFile = new File(inputFileName)
-        inputFile.eachLine { line ->
-            if (!line.startsWith("#"))
-                inputData.add([line.split("\t").collect { it.trim() }, inputFileName, -1, -1].flatten().join("\t"))
+        inputFile.splitEachLine("\t") { List<String> splitLine ->
+            if (!splitLine[0].startsWith("#")) {
+                def signature = splitLine[0..4].join("\t")
+                def counters = coordMap[signature]
+                if (counters == null) {
+                    coordMap.put(signature, counters = new int[2])
+                }
+                if (splitLine.size() > 6) {
+                    counters[0] += splitLine[5].toInteger()
+                    counters[1] += splitLine[6].toInteger()
+                }
+            }
+        }
+        coordMap.each {
+            inputData.add(it.key + "\t$inputFileName\t" + it.value.collect().join("\t"))
         }
         break
 
@@ -354,7 +367,7 @@ int ff = 0
 int m1 = 0, m2 = 0, m3 = 0
 inputData.each { line ->
     j++
-    def splitLine = line.split("\t")
+    def splitLine = line.split("\t").collect { it.trim() }
     def coord5 = Integer.parseInt(splitLine[1]), coord3 = Integer.parseInt(splitLine[3])
     def tissue = splitLine[4].toUpperCase(), sample = splitLine[5]
     def nSpan = splitLine[6].toInteger(), nEncomp = splitLine[7].toInteger()
