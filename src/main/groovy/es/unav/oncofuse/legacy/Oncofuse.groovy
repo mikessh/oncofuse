@@ -66,7 +66,7 @@ if (!new File(inputFileName).exists()) {
     System.exit(1)
 }
 
-if (!A_ALLOWED.any {it==hgX}){
+if (!A_ALLOWED.any { it == hgX }) {
     println "[ERROR] Unrecognized genome assembly, $hgX"
     System.exit(1)
 }
@@ -225,9 +225,9 @@ switch (inputType) {
             try {
                 int nSpan = Integer.parseInt(line[5]), nSupport = Integer.parseInt(line[4])
                 if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
-                    inputData.add("chr" + line[8].split(":")[0..1].collect { it.trim() }.join("\t") + "\tchr"
-                            + line[9].split(":")[0..1].collect { it.trim() }.join("\t")
-                            + "\t" + tissueType + "\t$inputFileName\t-1\t-1")
+                    inputData.add(["chr" + line[8].split(":")[0..1].collect { it.trim() }.join("\t"),
+                                   "chr" + line[9].split(":")[0..1].collect { it.trim() }.join("\t"),
+                                   tissueType, inputFileName, nSpan, nSupport].join("\t"))
             } catch (Exception e) {
                 println "Ignoring line ${line.join("\t")}"
             }
@@ -723,7 +723,10 @@ classifierResults.each { result ->
 println "[${new Date()}] Writing output"
 new File(outputFileName).withPrintWriter { pw ->
     // Header
-    pw.println(["SAMPLE_ID", "FUSION_ID", "TISSUE", "SPANNING_READS", "ENCOMPASSING_READS", "GENOMIC",
+    pw.println(["SAMPLE_ID", "FUSION_ID", "TISSUE",
+                inputType == 'fcatcher' ? "SPANNING_READS_UNIQUE" : "SPANNING_READS",
+                "ENCOMPASSING_READS",
+                "GENOMIC",
                 "5_FPG_GENE_NAME", "5_IN_CDS?", "5_SEGMENT_TYPE", "5_SEGMENT_ID",
                 "5_COORD_IN_SEGMENT", "5_FULL_AA", "5_FRAME",
                 "3_FPG_GENE_NAME", "3_IN_CDS?", "3_SEGMENT_TYPE", "3_SEGMENT_ID",
