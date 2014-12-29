@@ -1,6 +1,6 @@
-===================
-= ONCOFUSE V1.0.9 =
-===================
+====================
+= ONCOFUSE V1.0.9a =
+====================
 
 
 Oncofuse is a framework designed to estimate the oncogenic potential of de-novo discovered gene fusions. It uses several hallmark features and employs a bayesian classifier to provide the probability of a given gene fusion being a driver mutation.
@@ -13,6 +13,8 @@ See http://www.unav.es/genetica/oncofuse.html for further details.
 
 
 >WHAT'S NEW
+
+- Version 1.0.9a (Dec-2014) added (experimental) filtering for fusions with discordant FPG strands
 
 - Version 1.0.9 (Nov-2014) minor improvements, support for hg18, hg19 and hg38 genome assemblies. ALWAYS check the coordinate system
 

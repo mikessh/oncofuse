@@ -34,7 +34,7 @@ def cli = new CliBuilder(usage:
                 "replace N by number of spanning reads and M by number of total supporting read pairs\n" +
                 "Supported tissue types: " +
                 "EPI, HEM, MES, AVG or -\n" +
-                "Version 1.0.9, 22Nov2014\n")
+                "Version 1.0.9a, 29Dec2014\n")
 cli.h("display help message")
 cli.a(argName: "hgXX", args: 1, "Genome assembly version, default is $A_DEFAULT. " +
         "Allowed values: ${A_ALLOWED.join(", ")}")
