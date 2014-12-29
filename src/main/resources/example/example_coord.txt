@@ -1,5 +1,5 @@
 # Run java -Xmx1G -jar Oncofuse.jar example_coord.txt coord - out.txt
 #chr1	coord1	chr2	coord2	tissue	spanning	encompassing
-chr22	23632742	chr9	133607147	HEM	1	2
-chr22	23632742	chr9	133607147	HEM	0	2
-chr22	23632742	chr9	133607147	HEM		
+chr22	23632742	chr9	133607147	HEM	+	+	1	2
+chr22	23632742	chr9	133607147	HEM	+	+	0	2
+chr22	23632742	chr9	133607147	HEM	+	+
