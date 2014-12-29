@@ -203,6 +203,8 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
 }
 
 // Read and convert to common format
+// Input data format:
+// chr1 coord1 chr2 coord2 tissueType sampleName strand1 strand2 nSpan nSupport
 def inputData = new ArrayList<String>()
 
 println "[${new Date()}] Reading input file"
@@ -224,10 +226,14 @@ switch (inputType) {
         inputFile.splitEachLine("\t") { line ->
             try {
                 int nSpan = Integer.parseInt(line[5]), nSupport = Integer.parseInt(line[4])
-                if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
-                    inputData.add(["chr" + line[8].split(":")[0..1].collect { it.trim() }.join("\t"),
-                                   "chr" + line[9].split(":")[0..1].collect { it.trim() }.join("\t"),
-                                   tissueType, inputFileName, nSpan, nSupport].join("\t"))
+                if (nSpan >= minSpan && (nSpan + nSupport) >= minSum) {
+                    def chrLine1 = line[8].split(":"), chrLine2 = line[9].split(":")
+                    inputData.add(["chr" + chrLine1[0..1].collect { it.trim() }.join("\t"),
+                                   "chr" + chrLine2[0..1].collect { it.trim() }.join("\t"),
+                                   tissueType, inputFileName,
+                                   chrLine1[2] == "+", chrLine2[2] == "+",
+                                   nSpan, nSupport].join("\t"))
+                }
             } catch (Exception e) {
                 println "Ignoring line ${line.join("\t")}"
             }
@@ -242,11 +248,14 @@ switch (inputType) {
                 try {
                     if (line.size() > 3 && line[1].startsWith("chr")) {
                         def chrs = line[1].split("-")
-                        inputData.add([chrs[0], line[2], chrs[1], line[3], tissueType, line[0], -1, -1].join("\t"))
+                        inputData.add([chrs[0], line[2], chrs[1], line[3],
+                                       tissueType, line[0],
+                                       line[4][0] == "f", line[4][1] == "f",
+                                       -1, -1].join("\t"))
                     }
                 }
                 catch (Exception e) {
-                    println "Ignoring line ${line.join("\t")}"
+                    //println "Ignoring line ${line.join("\t")}" too many lines to ignore
                 }
             }
         } else
@@ -255,7 +264,9 @@ switch (inputType) {
                     def chrs = line[0].split("-")
                     int nSpan = Integer.parseInt(line[4]), nSupport = Integer.parseInt(line[5])
                     if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
-                        inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType, inputFileName, nSpan, nSupport].join("\t"))
+                        inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType, inputFileName,
+                                       line[3][0] == "f", line[3][1] == "f",
+                                       nSpan, nSupport].join("\t"))
                 }
                 catch (Exception e) {
                     println "Ignoring line ${line.join("\t")}"
@@ -301,7 +312,9 @@ switch (inputType) {
                                 counter[1].incrementAndGet()
                                 k.incrementAndGet()
                             } else {
-                                sign2coord.putIfAbsent(signature, [chrom1, coord1, chrom2, coord2, tissueType].join("\t"))
+                                sign2coord.putIfAbsent(signature, [chrom1, coord1, chrom2, coord2,
+                                                                   tissueType, inputFileName,
+                                                                   strand1, strand2].join("\t"))
                                 counter[0].incrementAndGet()
                                 m.incrementAndGet()
                             }
@@ -322,7 +335,7 @@ switch (inputType) {
         sign2counter.each {
             int nSpan = it.value[0].intValue(), nEncomp = it.value[1].intValue()
             if (nSpan >= minSpan && (nSpan + nEncomp) >= minSum && sign2coord[it.key] != null)
-                inputData.add(sign2coord[it.key] + "\t" + inputFileName + "\t" + nSpan + "\t" + nEncomp)
+                inputData.add(sign2coord[it.key] + "\t" + nSpan + "\t" + nEncomp)
         }
         println "[${new Date()}] [Post-processing RNASTAR input] Taken $n reads, of them mapped to canonical RefSeq: $k as encompassing, $m as spanning. Total ${sign2coord.size()} exon pairs, of them ${inputData.size()} passed junction coverage filter."
         break
@@ -332,19 +345,21 @@ switch (inputType) {
         def inputFile = new File(inputFileName)
         inputFile.splitEachLine("\t") { List<String> splitLine ->
             if (!splitLine[0].startsWith("#")) {
-                def signature = splitLine[0..4].join("\t")
+                def signature = splitLine[0..4].join("\t") + "\t" + inputFileName
+                if (splitLine.size() > 6)
+                    signature += "\t" + (splitLine[5] == "+") + "\t" + (splitLine[6] == "+")
                 def counters = coordMap[signature]
-                if (counters == null) {
+                if (counters == null)
                     coordMap.put(signature, counters = new int[2])
-                }
-                if (splitLine.size() > 6) {
-                    counters[0] += splitLine[5].toInteger()
-                    counters[1] += splitLine[6].toInteger()
+
+                if (splitLine.size() > 8) {
+                    counters[0] += splitLine[7].toInteger()
+                    counters[1] += splitLine[8].toInteger()
                 }
             }
         }
         coordMap.each {
-            inputData.add(it.key + "\t$inputFileName\t" + it.value.collect().join("\t"))
+            inputData.add(it.key + "\t" + it.value.collect().join("\t"))
         }
         break
 
@@ -364,13 +379,14 @@ def fusionList = new ArrayList<Fusion>()
 def tissue2FpgMap = new HashMap<String, Set<FpgPart>>()
 def fpgSet = new HashSet<FpgPart>()
 int ff = 0
-int m1 = 0, m2 = 0, m3 = 0
+int m1 = 0, m2 = 0, m3 = 0, m4 = 0
 inputData.each { line ->
     j++
     def splitLine = line.split("\t").collect { it.trim() }
     def coord5 = Integer.parseInt(splitLine[1]), coord3 = Integer.parseInt(splitLine[3])
     def tissue = splitLine[4].toUpperCase(), sample = splitLine[5]
-    def nSpan = splitLine[6].toInteger(), nEncomp = splitLine[7].toInteger()
+    def strand1 = splitLine[6].toBoolean(), strand2 = splitLine[7].toBoolean()
+    def nSpan = splitLine[8].toInteger(), nEncomp = splitLine[9].toInteger()
     def gene5, gene3
     def fpgPart5, fpgPart3
     if (!(gene5 = fetchGene(splitLine[0], coord5)) || !(fpgPart5 = map(true, gene5, coord5))) {
@@ -389,6 +405,12 @@ inputData.each { line ->
         fpgPart5 = null
         m3++
     }
+    if((strand[gene5] == strand1) != (strand[gene3] == strand2)){
+        if (ff++ < 20)
+            println "[${new Date()}] FILTER (reporting first 20 only): Head to head / tail to tail #${j} in input"
+        fpgPart5 = null
+        m4++
+    }
 
     if (fpgPart5 && fpgPart3) {
         fusionList.add(new Fusion(j, nSpan, nEncomp, fpgPart5, fpgPart3, tissue, sample))
@@ -402,7 +424,8 @@ inputData.each { line ->
         i++
     }
 }
-println "[${new Date()}] $i fusions mapped out of $j. Dropped fusion candidates: $m1 - 5'FPG not mapped, $m2 - 3'FPG not mapped, $m3 - mapped to same gene"
+println "[${new Date()}] $i fusions mapped out of $j. Dropped fusion candidates: " +
+        "$m1 - 5'FPG not mapped, $m2 - 3'FPG not mapped, $m3 - mapped to same gene, $m4 - discordant FPG directions"
 
 ////////////////////////
 // FEATURES FOR FPGS //
