@@ -53,7 +53,7 @@ if (opt.h || opt.arguments().size() != 4) {
 }
 
 def inputFileName = opt.arguments()[0],
-    inputType = opt.arguments()[1],
+    inputType = opt.arguments()[1].toUpperCase(),
     tissueType = opt.arguments()[2],
     outputFileName = opt.arguments()[3]
 def THREADS = (opt.p ?: "${Runtime.getRuntime().availableProcessors()}").toInteger()
@@ -109,20 +109,33 @@ if (!allowedTissueTypes.any { tissueType == it }) {
 /////////////////////////////////////////
 // LOADING BKPT POSITIONS AND MAPPING //
 ///////////////////////////////////////
-println "[${new Date()}] Mapping fusion breakpoints"
+println "[${new Date()}] Loading RefSeq data, assuming $hgX"
 
 // Data for mapping
 // Refseq canonical data schema
 // 0        1       2       3       4       5           6       7           8           9
 // #name	chrom	strand	txStart	txEnd	cdsStart	cdsEnd	exonStarts	exonEnds	name2
 def exonStartCoords = new HashMap<String, List<Integer>>(), exonEndCoords = new HashMap<String, List<Integer>>()
-def strand = new HashMap<String, Boolean>()
+def gene2Strand = new HashMap<String, Integer>()
 def geneByChrom = new HashMap<String, List<String>>()
 def transcriptStartCoords = new HashMap<String, Integer>(), transcriptEndCoords = new HashMap<String, Integer>()
 def cdsStartCoords = new HashMap<String, Integer>(), cdsEndCoords = new HashMap<String, Integer>()
 
 def canonicalTranscripts = new HashSet<String>(new File(canonicalTranscriptsFileName).readLines())
 def gene2chr = new HashMap<String, String>()
+
+def convertStrand = { String strand ->
+    switch (strand) {
+        case "+":
+        case "f":
+            return 1
+        case "-":
+        case "r":
+            return -1
+        default:
+            return 0
+    }
+}
 
 new File(refseqFileName).splitEachLine('\t') { splitLine ->
     if (canonicalTranscripts.contains(splitLine[0])) {
@@ -142,7 +155,7 @@ new File(refseqFileName).splitEachLine('\t') { splitLine ->
             transcriptEndCoords.put(geneName, Integer.parseInt(splitLine[4]))
             cdsStartCoords.put(geneName, cdsStart)
             cdsEndCoords.put(geneName, cdsEnd)
-            strand.put(geneName, splitLine[2] == '+')
+            gene2Strand.put(geneName, convertStrand(splitLine[2]))
         }
     }
 }
@@ -168,7 +181,7 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
     def cdsStart = cdsStartCoords[gene], cdsEnd = cdsEndCoords[gene]
 
     int n = exonsStarts.size()
-    boolean s = strand[gene]
+    boolean s = gene2Strand[gene]
     def exonLen = { int exonId ->
         Math.max(0, Math.min(exonsEnds[exonId], cdsEnd) - Math.max(exonsStarts[exonId], cdsStart))
     }
@@ -207,7 +220,7 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
 // chr1 coord1 chr2 coord2 tissueType sampleName strand1 strand2 nSpan nSupport
 def inputData = new ArrayList<String>()
 
-println "[${new Date()}] Reading input file"
+println "[${new Date()}] Reading input file, assuming $inputType format"
 
 def inputTypeArgs = inputType.split("-")
 
@@ -221,7 +234,7 @@ if (inputTypeArgs.length == 3) {
 }
 
 switch (inputType) {
-    case 'fcatcher':
+    case 'FCATCHER':
         def inputFile = new File(inputFileName)
         inputFile.splitEachLine("\t") { line ->
             try {
@@ -231,7 +244,7 @@ switch (inputType) {
                     inputData.add(["chr" + chrLine1[0..1].collect { it.trim() }.join("\t"),
                                    "chr" + chrLine2[0..1].collect { it.trim() }.join("\t"),
                                    tissueType, inputFileName,
-                                   chrLine1[2] == "+", chrLine2[2] == "+",
+                                   convertStrand(chrLine1[2]), convertStrand(chrLine2[2]),
                                    nSpan, nSupport].join("\t"))
                 }
             } catch (Exception e) {
@@ -240,7 +253,7 @@ switch (inputType) {
         }
         break
 
-    case 'tophat':
+    case 'TOPHAT':
         def inputFile = new File(inputFileName)
 
         if (inputTypeArgs.length == 2 && inputTypeArgs[1] == 'post') {
@@ -250,8 +263,8 @@ switch (inputType) {
                         def chrs = line[1].split("-")
                         inputData.add([chrs[0], line[2], chrs[1], line[3],
                                        tissueType, line[0],
-                                       line[4][0] == "f", line[4][1] == "f",
-                                       -1, -1].join("\t"))
+                                       convertStrand(line[4][0]), convertStrand(line[4][1]),
+                                       0, 0].join("\t"))
                     }
                 }
                 catch (Exception e) {
@@ -265,7 +278,7 @@ switch (inputType) {
                     int nSpan = Integer.parseInt(line[4]), nSupport = Integer.parseInt(line[5])
                     if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
                         inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType, inputFileName,
-                                       line[3][0] == "f", line[3][1] == "f",
+                                       convertStrand(line[3][0]), convertStrand(line[3][1]),
                                        nSpan, nSupport].join("\t"))
                 }
                 catch (Exception e) {
@@ -274,7 +287,7 @@ switch (inputType) {
             }
         break
 
-    case 'rnastar':
+    case 'RNASTAR':
         def inputFile = new File(inputFileName)
 
         def sign2counter = new ConcurrentHashMap<String, AtomicInteger[]>()
@@ -283,21 +296,22 @@ switch (inputType) {
 
         def n = new AtomicInteger(0), k = new AtomicInteger(0), m = new AtomicInteger(0)
         GParsPool.withPool THREADS, {
-            inputData.eachParallel { line ->
-                line = line.split("\t")
+            inputData.eachParallel { String line ->
+                splitLine = line.split("\t")
+
                 // Here we collapse reads
                 try {
-                    int type = Integer.parseInt(line[6])
-                    String chrom1 = line[0], chrom2 = line[3]
-                    int coord1 = Integer.parseInt(line[1]), coord2 = Integer.parseInt(line[4])
-                    boolean strand1 = line[2] == "+", strand2 = line[5] == "+"
+                    int type = Integer.parseInt(splitLine[6])
+                    String chrom1 = splitLine[0], chrom2 = splitLine[3]
+                    int coord1 = Integer.parseInt(splitLine[1]), coord2 = Integer.parseInt(splitLine[4])
+                    int strand1 = convertStrand(splitLine[2]), strand2 = convertStrand(splitLine[5])
 
                     String gene1 = fetchGene(chrom1, coord1)
                     String gene2 = fetchGene(chrom2, coord2)
 
                     if (gene1 != null && gene2 != null) {
-                        def map1 = map(false, gene1, coord1 + (strand1 ? -1 : 1)),
-                            map2 = map(false, gene2, coord2 + (strand1 ? 1 : -1))
+                        def map1 = map(false, gene1, coord1 - strand1),
+                            map2 = map(false, gene2, coord2 + strand1)
                         if (map1 != null && map1.exon && map2 != null && map2.exon) {
                             exon1 = map1.segmentId
                             exon2 = map2.segmentId
@@ -325,7 +339,7 @@ switch (inputType) {
                         println "[${new Date()}] [Post-processing RNASTAR input] $nn reads analyzed"
                 }
                 catch (Exception e) {
-                    println "Ignoring line ${line.join("\t")}"
+                    println "Ignoring line ${splitLine.join("\t")}"
                 }
             }
         }
@@ -340,14 +354,18 @@ switch (inputType) {
         println "[${new Date()}] [Post-processing RNASTAR input] Taken $n reads, of them mapped to canonical RefSeq: $k as encompassing, $m as spanning. Total ${sign2coord.size()} exon pairs, of them ${inputData.size()} passed junction coverage filter."
         break
 
-    case 'coord':
+    case 'COORD':
         def coordMap = new HashMap<String, int[]>()
         def inputFile = new File(inputFileName)
         inputFile.splitEachLine("\t") { List<String> splitLine ->
             if (!splitLine[0].startsWith("#")) {
                 def signature = splitLine[0..4].join("\t") + "\t" + inputFileName
                 if (splitLine.size() > 6)
-                    signature += "\t" + (splitLine[5] == "+") + "\t" + (splitLine[6] == "+")
+                    signature += "\t" + convertStrand(splitLine[5]) +
+                            "\t" + convertStrand(splitLine[6])
+                else
+                    signature += "\t0\t0"
+
                 def counters = coordMap[signature]
                 if (counters == null)
                     coordMap.put(signature, counters = new int[2])
@@ -380,32 +398,46 @@ def tissue2FpgMap = new HashMap<String, Set<FpgPart>>()
 def fpgSet = new HashSet<FpgPart>()
 int ff = 0
 int m1 = 0, m2 = 0, m3 = 0, m4 = 0
+int FAILURES_TO_REPORT = 20
 inputData.each { line ->
     j++
     def splitLine = line.split("\t").collect { it.trim() }
+
     def coord5 = Integer.parseInt(splitLine[1]), coord3 = Integer.parseInt(splitLine[3])
-    def tissue = splitLine[4].toUpperCase(), sample = splitLine[5]
-    def strand1 = splitLine[6].toBoolean(), strand2 = splitLine[7].toBoolean()
-    def nSpan = splitLine[8].toInteger(), nEncomp = splitLine[9].toInteger()
+    def tissue = splitLine[4].toUpperCase(),
+        sample = splitLine[5]
+    def strand1 = splitLine[6].toInteger(),
+        strand2 = splitLine[7].toInteger()
+    def nSpan = splitLine[8].toInteger(),
+        nEncomp = splitLine[9].toInteger()
+
     def gene5, gene3
     def fpgPart5, fpgPart3
+
     if (!(gene5 = fetchGene(splitLine[0], coord5)) || !(fpgPart5 = map(true, gene5, coord5))) {
-        if (ff++ < 20)
-            println "[${new Date()}] FILTER (reporting first 20 only): Not mapped to any acceptable transcript: 5' \"${splitLine[0]}:${coord5}\" at fusion #${j} in input"
+        if (ff++ < FAILURES_TO_REPORT)
+            println "[${new Date()}] FILTER (reporting first $FAILURES_TO_REPORT only): " +
+                    "Not mapped to any acceptable transcript: 5' \"${splitLine[0]}:${coord5}\" at fusion #${j} in input"
         m1++
     }
+
     if (!(gene3 = fetchGene(splitLine[2], coord3)) || !(fpgPart3 = map(false, gene3, coord3))) {
-        if (ff++ < 20)
-            println "[${new Date()}] FILTER (reporting first 20 only): Not mapped to any acceptable transcript: 3' \"${splitLine[2]}:${coord3}\" at fusion #${j} in input"
+        if (ff++ < FAILURES_TO_REPORT)
+            println "[${new Date()}] FILTER (reporting first $FAILURES_TO_REPORT only): " +
+                    "Not mapped to any acceptable transcript: 3' \"${splitLine[2]}:${coord3}\" at fusion #${j} in input"
         m2++
     }
+
     if (gene5 == gene3) {
-        if (ff++ < 20)
-            println "[${new Date()}] FILTER (reporting first 20 only): Same gene for 5' and 3' FPG at fusion #${j} in input"
+        if (ff++ < FAILURES_TO_REPORT)
+            println "[${new Date()}] FILTER (reporting first $FAILURES_TO_REPORT only): " +
+                    "Same gene for 5' and 3' FPG at fusion #${j} in input"
         fpgPart5 = null
         m3++
     }
-    if((strand[gene5] == strand1) != (strand[gene3] == strand2)){
+
+    if (strand1 != 0 && strand2 != 0 &&
+            ((gene2Strand[gene5] == strand1) != (gene2Strand[gene3] == strand2))) {
         if (ff++ < 20)
             println "[${new Date()}] FILTER (reporting first 20 only): Head to head / tail to tail #${j} in input"
         fpgPart5 = null
