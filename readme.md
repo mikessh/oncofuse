@@ -22,6 +22,8 @@ This repository contains the Oncofuse source code and the latest binary version 
 
 * Also note that support for FusionCatcher versions earlier than 0.99.3 was deprecated
 
+* Please use the [issue tracker](https://github.com/mikessh/oncofuse/issues) to report bugs and suggest new features.
+
 ---
 ## Compiling Oncofuse
 
