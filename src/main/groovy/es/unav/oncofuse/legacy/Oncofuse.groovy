@@ -21,7 +21,6 @@ package es.unav.oncofuse.legacy
 
 import groovyx.gpars.GParsPool
 
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 def A_DEFAULT = "hg19", A_ALLOWED = ["hg18", "hg19", "hg38"]
@@ -290,57 +289,52 @@ switch (inputType) {
     case 'RNASTAR':
         def inputFile = new File(inputFileName)
 
-        def sign2counter = new ConcurrentHashMap<String, AtomicInteger[]>()
-        def sign2coord = new ConcurrentHashMap<String, String>()
+        def sign2counter = new HashMap<String, int[]>()
+        def sign2coord = new HashMap<String, String>()
         inputData = inputFile.readLines()
 
-        def n = new AtomicInteger(0), k = new AtomicInteger(0), m = new AtomicInteger(0)
-        GParsPool.withPool THREADS, {
-            inputData.eachParallel { String line ->
-                splitLine = line.split("\t")
+        def n = 0, k = 0, m = 0
+        inputData.each { String line ->
+            splitLine = line.split("\t")
 
-                // Here we collapse reads
-                try {
-                    int type = Integer.parseInt(splitLine[6])
-                    String chrom1 = splitLine[0], chrom2 = splitLine[3]
-                    int coord1 = Integer.parseInt(splitLine[1]), coord2 = Integer.parseInt(splitLine[4])
-                    int strand1 = convertStrand(splitLine[2]), strand2 = convertStrand(splitLine[5])
+            // Here we collapse reads
+            try {
+                int type = Integer.parseInt(splitLine[6])
+                String chrom1 = splitLine[0], chrom2 = splitLine[3]
+                int coord1 = Integer.parseInt(splitLine[1]), coord2 = Integer.parseInt(splitLine[4])
+                int strand1 = convertStrand(splitLine[2]), strand2 = convertStrand(splitLine[5])
 
-                    String gene1 = fetchGene(chrom1, coord1)
-                    String gene2 = fetchGene(chrom2, coord2)
+                String gene1 = fetchGene(chrom1, coord1)
+                String gene2 = fetchGene(chrom2, coord2)
 
-                    if (gene1 != null && gene2 != null) {
-                        def map1 = map(false, gene1, coord1 - strand1),
-                            map2 = map(false, gene2, coord2 + strand1)
-                        if (map1 != null && map1.exon && map2 != null && map2.exon) {
-                            exon1 = map1.segmentId
-                            exon2 = map2.segmentId
-                            String signature = [gene1, exon1, gene2, exon2].join("\t")
+                if (gene1 != null && gene2 != null) {
+                    def map1 = map(false, gene1, coord1 - strand1),
+                        map2 = map(false, gene2, coord2 + strand1)
+                    if (map1 != null && map1.exon && map2 != null && map2.exon) {
+                        exon1 = map1.segmentId
+                        exon2 = map2.segmentId
+                        String signature = [gene1, exon1, gene2, exon2].join("\t")
 
-                            def counter = new AtomicInteger[2]
-                            counter[0] = new AtomicInteger(0)
-                            counter[1] = new AtomicInteger(0)
-                            counter = sign2counter.putIfAbsent(signature, counter) ?: counter
+                        def counter
+                        sign2counter.put(signature, counter = (sign2counter[signature] ?: new int[2]))
 
-                            if (type < 0) {
-                                counter[1].incrementAndGet()
-                                k.incrementAndGet()
-                            } else {
-                                sign2coord.putIfAbsent(signature, [chrom1, coord1, chrom2, coord2,
-                                                                   tissueType, inputFileName,
-                                                                   strand1, strand2].join("\t"))
-                                counter[0].incrementAndGet()
-                                m.incrementAndGet()
-                            }
+                        if (type < 0) {
+                            counter[1]++
+                            k++
+                        } else {
+                            sign2coord.put(signature, [chrom1, coord1, chrom2, coord2,
+                                                       tissueType, inputFileName,
+                                                       strand1, strand2].join("\t"))
+                            counter[0]++
+                            m++
                         }
                     }
-                    def nn = n.incrementAndGet()
-                    if (nn % 100000 == 0)
-                        println "[${new Date()}] [Post-processing RNASTAR input] $nn reads analyzed"
                 }
-                catch (Exception e) {
-                    println "Ignoring line ${splitLine.join("\t")}"
-                }
+                if (++n % 100000 == 0)
+                    println "[${new Date()}] [Post-processing RNASTAR input] $n reads analyzed"
+            }
+            catch (Exception e) {
+                println "Ignoring line ${splitLine.join("\t")}"
             }
         }
 
