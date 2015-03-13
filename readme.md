@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/mikessh/oncofuse.svg?branch=legacy)](https://travis-ci.org/mikessh/oncofuse)
 
 ---
 
