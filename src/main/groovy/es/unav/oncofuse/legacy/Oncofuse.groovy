@@ -124,7 +124,7 @@ def canonicalTranscripts = new HashSet<String>(new File(canonicalTranscriptsFile
 def gene2chr = new HashMap<String, String>()
 
 def convertStrand = { String strand ->
-    switch (strand) {
+    switch (strand.toLowerCase()) {
         case "+":
         case "f":
             return 1
@@ -180,7 +180,7 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
     def cdsStart = cdsStartCoords[gene], cdsEnd = cdsEndCoords[gene]
 
     int n = exonsStarts.size()
-    boolean s = gene2Strand[gene]
+    boolean s = gene2Strand[gene] > 0
     def exonLen = { int exonId ->
         Math.max(0, Math.min(exonsEnds[exonId], cdsEnd) - Math.max(exonsStarts[exonId], cdsStart))
     }
