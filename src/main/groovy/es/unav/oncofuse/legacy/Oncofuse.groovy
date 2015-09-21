@@ -244,6 +244,10 @@ if (inputTypeArgs.length == 3) {
     minSum = Integer.parseInt(inputTypeArgs[2])
 }
 
+def appendChr = { String str ->
+    str.startsWith("chr") ? str : ("chr" + str)
+}
+
 switch (inputType) {
     case 'FCATCHER':
         def inputFile = new File(inputFileName)
@@ -251,9 +255,18 @@ switch (inputType) {
             try {
                 int nSpan = Integer.parseInt(line[5]), nSupport = Integer.parseInt(line[4])
                 if (nSpan >= minSpan && (nSpan + nSupport) >= minSum) {
-                    def chrLine1 = line[8].split(":"), chrLine2 = line[9].split(":")
-                    inputData.add(["chr" + chrLine1[0..1].collect { it.trim() }.join("\t"),
-                                   "chr" + chrLine2[0..1].collect { it.trim() }.join("\t"),
+                    def chrLine1 = appendChr(line[8]).split(":"), chrLine2 = appendChr(line[9]).split(":")
+                    inputData.add([chrLine1[0..1].collect { it.trim() }.join("\t"),
+                                   chrLine2[0..1].collect { it.trim() }.join("\t"),
+                                   tissueType, inputFileName,
+                                   convertStrand(chrLine1[2]), convertStrand(chrLine2[2]),
+                                   nSpan, nSupport].join("\t"))
+                }
+            } catch (Exception e) {
+                println "Ignoring line ${line.join("\t")}"
+            }
+        }
+        break
                                    tissueType, inputFileName,
                                    convertStrand(chrLine1[2]), convertStrand(chrLine2[2]),
                                    nSpan, nSupport].join("\t"))
