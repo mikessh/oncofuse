@@ -44,11 +44,11 @@ cli.width = 100
 def opt = cli.parse(args)
 
 if (opt == null)
-    System.exit(-1)
+    System.exit(2)
 
 if (opt.h || opt.arguments().size() != 4) {
     cli.usage()
-    System.exit(-1)
+    System.exit(2)
 }
 
 def inputFileName = opt.arguments()[0],
@@ -62,12 +62,12 @@ def hgX = opt.a ?: A_DEFAULT
 
 if (!new File(inputFileName).exists()) {
     println "[ERROR] Input file not found, $inputFileName"
-    System.exit(1)
+    System.exit(2)
 }
 
 if (!A_ALLOWED.any { it == hgX }) {
     println "[ERROR] Unrecognized genome assembly, $hgX"
-    System.exit(1)
+    System.exit(2)
 }
 
 // Check if library is in place
@@ -91,7 +91,7 @@ def missing = [canonicalTranscriptsFileName, refseqFileName, libFolderName,
 if (missing.size() > 0) {
     println "[ERROR] The following resources are missing:\n"
     println missing.join("\n")
-    System.exit(1)
+    System.exit(2)
 }
 
 // Tissue type checks
@@ -102,7 +102,7 @@ def allowedTissueTypes = [libs.collect { it.toUpperCase() }, '-'].flatten()
 if (!allowedTissueTypes.any { tissueType == it }) {
     println "[ERROR] Unrecognized tissue type, $tissueType. " +
             "Allowed tissue types are: ${allowedTissueTypes.join(", ")}"
-    System.exit(1)
+    System.exit(2)
 }
 
 /////////////////////////////////////////
@@ -389,11 +389,11 @@ switch (inputType) {
 
     default:
         println "[ERROR] Unknown input format, $inputType"
-        System.exit(-1)
+        System.exit(2)
 }
 if (inputData.size() == 0) {
     println "[WARNING] No valid fusions in input file!"
-    //System.exit(-1)
+    //System.exit(2)
 }
 
 // Make a list of fusions
@@ -428,8 +428,6 @@ inputData.each { line ->
     }
 
     if (!(gene3 = fetchGene(splitLine[2], coord3)) || !(fpgPart3 = map(false, gene3, coord3))) {
-        println gene3
-        println fpgPart3
         if (ff++ < FAILURES_TO_REPORT)
             println "[${new Date()}] FILTER (reporting first $FAILURES_TO_REPORT only): " +
                     "Not mapped to any acceptable transcript: 3' \"${splitLine[2]}:${coord3}\" at fusion #${j} in input"
@@ -488,7 +486,7 @@ libs.each { lib ->
     if (missing.size() > 0) {
         println "[ERROR] Library $lib is incomplete, the following files are missing:\n"
         println missing.join("\n")
-        System.exit(-1)
+        System.exit(2)
     }
 
     promData.put(lib, new HashMap<String, List<Double>>())
@@ -639,7 +637,7 @@ tissue2FpgMap.each { Map.Entry<String, Set<FpgPart>> entry ->
             def fpgTSFeatures = new TissueSpecificFeatures()
             if (promData[tissue] == null) {
                 println "[${new Date()}] ERROR: bad (or no) tissue specified, \"$tissue\""
-                System.exit(-1)
+                System.exit(2)
             }
             fpgTSFeatures.promFeatures = promData[tissue][fpgPart.geneName] ?: promFeatsUndefList
             fpgTSFeatures.utrFeatures = utrData[tissue][fpgPart.geneName] ?: utrFeatsUndefList
