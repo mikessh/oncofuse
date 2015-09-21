@@ -285,7 +285,7 @@ switch (inputType) {
                 try {
                     if (line.size() > 3 && line[1].startsWith("chr")) {
                         def chrs = line[1].split("-")
-                        inputData.add([chrs[0], line[2], chrs[1], line[3],
+                        inputData.add([appendChr(chrs[0]), line[2], appendChr(chrs[1]), line[3],
                                        tissueType, line[0],
                                        convertStrand(line[4][0]), convertStrand(line[4][1]),
                                        0, 0].join("\t"))
@@ -301,7 +301,7 @@ switch (inputType) {
                     def chrs = line[0].split("-")
                     int nSpan = Integer.parseInt(line[4]), nSupport = Integer.parseInt(line[5])
                     if (nSpan >= minSpan && (nSpan + nSupport) >= minSum)
-                        inputData.add([chrs[0], line[1], chrs[1], line[2], tissueType, inputFileName,
+                        inputData.add([appendChr(chrs[0]), line[1], appendChr(chrs[1]), line[2], tissueType, inputFileName,
                                        convertStrand(line[3][0]), convertStrand(line[3][1]),
                                        nSpan, nSupport].join("\t"))
                 }
@@ -325,7 +325,7 @@ switch (inputType) {
             // Here we collapse reads
             try {
                 int type = Integer.parseInt(splitLine[6])
-                String chrom1 = splitLine[0], chrom2 = splitLine[3]
+                String chrom1 = appendChr(splitLine[0]), chrom2 = appendChr(splitLine[3])
                 int coord1 = Integer.parseInt(splitLine[1]), coord2 = Integer.parseInt(splitLine[4])
                 int strand1 = convertStrand(splitLine[2]), strand2 = convertStrand(splitLine[5])
 
