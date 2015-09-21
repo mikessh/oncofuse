@@ -28,7 +28,8 @@ def A_DEFAULT = "hg19", A_ALLOWED = ["hg18", "hg19", "hg38"]
 def cli = new CliBuilder(usage:
         "Oncofuse.jar [options] input_file input_type [tissue_type or -] output_file\n" +
                 "Supported input types: " +
-                "coord, fcatcher, fcatcher-N-M, tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M\n" +
+                "coord, fcatcher, fcatcher-N-M, " +
+                "tophat, tophat-N-M, tophat-post, rnastar, rnastar-N-M, starfusion, starfusion-N-M\n" +
                 "Running with input type args: " +
                 "replace N by number of spanning reads and M by number of total supporting read pairs\n" +
                 "Supported tissue types: " +
@@ -267,6 +268,16 @@ switch (inputType) {
             }
         }
         break
+
+    case 'STARFUSION':
+        def inputFile = new File(inputFileName)
+        inputFile.splitEachLine("\t") { line ->
+            try {
+                int nSpan = Integer.parseInt(line[2]), nSupport = Integer.parseInt(line[1])
+                if (nSpan >= minSpan && (nSpan + nSupport) >= minSum) {
+                    def chrLine1 = appendChr(line[4]).split(":"), chrLine2 = appendChr(line[7]).split(":")
+                    inputData.add([chrLine1[0..1].collect { it.trim() }.join("\t"),
+                                   chrLine2[0..1].collect { it.trim() }.join("\t"),
                                    tissueType, inputFileName,
                                    convertStrand(chrLine1[2]), convertStrand(chrLine2[2]),
                                    nSpan, nSupport].join("\t"))
