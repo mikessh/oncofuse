@@ -17,7 +17,6 @@
  */
 
 
-
 package es.unav.oncofuse.legacy
 
 
@@ -27,8 +26,8 @@ import weka.core.Instances
 import weka.core.converters.ArffLoader
 
 class ClassifierWrapper {
-    Instances trainingData
-    SerializedClassifier sc
+    final Instances trainingData
+    final SerializedClassifier sc
 
     ClassifierWrapper(String trainingSetFname, String model) {
         sc = new SerializedClassifier()

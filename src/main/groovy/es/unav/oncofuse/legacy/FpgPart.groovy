@@ -17,19 +17,14 @@
  */
 
 
-
 package es.unav.oncofuse.legacy
 
 
 class FpgPart {
-    String chrom
-    int chrCoord
-    String geneName
-    boolean fivePrimeFpg
-    boolean exon
-    int segmentId, coord, aaPos, frame, fullLen
-    boolean cds
-    String signature
+    final String chrom, geneName, signature
+    final int chrCoord
+    final boolean fivePrimeFpg, exon, cds
+    final int segmentId, coord, aaPos, frame, fullLen
 
     FpgPart(String chrom, int chrCoord, String geneName, boolean fivePrimeFpg, boolean exon, int segmentId, int coord, int aaPos, int frame, int fullLen) {
         this.chrom = chrom

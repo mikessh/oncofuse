@@ -17,14 +17,13 @@
  */
 
 
-
 package es.unav.oncofuse.legacy
 
 
 class Feature {
-    String parentGene
-    int aaFrom, aaTo
-    String featureId
+    final String parentGene
+    final int aaFrom, aaTo
+    final String featureId
 
     Feature(String parentGene, int aaFrom, int aaTo, String featureId) {
         this.parentGene = parentGene
