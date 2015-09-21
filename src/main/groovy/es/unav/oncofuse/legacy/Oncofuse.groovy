@@ -163,8 +163,8 @@ new File(refseqFileName).splitEachLine('\t') { splitLine ->
 def fetchGene = { String chrom, int coord ->
     def geneList = geneByChrom[chrom]
     def gene = geneList.find {
-        transcriptStartCoords.get(it) <= coord &&
-                transcriptEndCoords.get(it) >= coord
+        transcriptStartCoords.get(it) <= (coord + 1) &&
+                transcriptEndCoords.get(it) >= (coord - 1) // +/-1 is to allow "empty" fpgs
     }
     gene
 }
@@ -188,7 +188,19 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
         s ? Math.max(0, Math.min(Math.min(cdsEnd, exonsEnds[exonId]), coord - 1) - Math.max(exonsStarts[exonId], cdsStart)) : // bkpt marks first nt deleted, so -1 for 5' and +1 for 3'
                 Math.max(0, Math.min(exonsEnds[exonId], cdsEnd) - Math.max(Math.max(exonsStarts[exonId], cdsStart), coord + 1))
     }
-    int fullLen = (int) (0..(n - 1)).collect { exonLen(it) }.sum()
+    int fullLen = (int) (0..(n - 1)).collect { exonLen(it) }.sum(), fullAALen = fullLen / 3
+
+    if (coord < cdsStart) {
+        return new FpgPart(gene2chr[gene], coord, gene, fivePrime, false,
+                -1, -1,
+                s ? 0 : fullAALen,
+                0, fullAALen)
+    } else if (coord > cdsEnd) {
+        return new FpgPart(gene2chr[gene], coord, gene, fivePrime, false,
+                -1, -1,
+                s ? fullAALen : 0,
+                0, fullAALen)
+    }
 
     for (int i = 0; i < n; i++) { // From head to tail
         if (coord <= exonsStarts[i]) // intron
@@ -199,7 +211,7 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
             return new FpgPart(gene2chr[gene], coord, gene, fivePrime, false,
                     s ? i : n - i,
                     s ? coord - exonsEnds[i - 1] : exonsStarts[i] - coord,
-                    (int) (cc / 3), fivePrime ? cc % 3 : (fullLen - cc) % 3, (int) (fullLen / 3))
+                    (int) (cc / 3), fivePrime ? cc % 3 : (fullLen - cc) % 3, fullAALen)
         } else if (coord >= exonsStarts[i] && coord <= exonsEnds[i]) // exon
         {
             int cc = (s ?
@@ -209,7 +221,7 @@ def map = { Boolean fivePrime, String gene, Integer coord ->
             return new FpgPart(gene2chr[gene], coord, gene, fivePrime, true,
                     s ? i + 1 : n - i,
                     s ? coord - exonsStarts[i] : exonsEnds[i] - coord,
-                    (int) (cc / 3), fivePrime ? cc % 3 : (fullLen - cc) % 3, (int) (fullLen / 3))
+                    (int) (cc / 3), fivePrime ? cc % 3 : (fullLen - cc) % 3, fullAALen)
         }
     }
 }
@@ -416,6 +428,8 @@ inputData.each { line ->
     }
 
     if (!(gene3 = fetchGene(splitLine[2], coord3)) || !(fpgPart3 = map(false, gene3, coord3))) {
+        println gene3
+        println fpgPart3
         if (ff++ < FAILURES_TO_REPORT)
             println "[${new Date()}] FILTER (reporting first $FAILURES_TO_REPORT only): " +
                     "Not mapped to any acceptable transcript: 3' \"${splitLine[2]}:${coord3}\" at fusion #${j} in input"
