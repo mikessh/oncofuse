@@ -246,6 +246,7 @@ if (inputTypeArgs.length == 3) {
 }
 
 def appendChr = { String str ->
+    str = str.trim()
     str.startsWith("chr") ? str : ("chr" + str)
 }
 
@@ -291,12 +292,12 @@ switch (inputType) {
     case 'TOPHAT':
         def inputFile = new File(inputFileName)
 
-        if (inputTypeArgs.length == 2 && inputTypeArgs[1] == 'post') {
+        if (inputTypeArgs.length == 2 && inputTypeArgs[1] == 'POST') {
             inputFile.splitEachLine("[ \t]") { line ->
                 try {
                     if (line.size() > 3 && line[1].startsWith("chr")) {
                         def chrs = line[1].split("-")
-                        inputData.add([appendChr(chrs[0]), line[2], appendChr(chrs[1]), line[3],
+                        inputData.add([chrs[0], line[2], chrs[1], line[3],
                                        tissueType, line[0],
                                        convertStrand(line[4][0]), convertStrand(line[4][1]),
                                        0, 0].join("\t"))
