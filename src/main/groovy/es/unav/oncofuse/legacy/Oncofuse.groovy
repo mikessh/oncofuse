@@ -623,6 +623,18 @@ def fpg2DomainFeaturesMap = Collections.synchronizedMap(new HashMap<FpgPart, Dom
 println "[${new Date()}] =Stage #1: raw data"
 
 println "[${new Date()}] ==Domain & PII related"
+
+def getRegionState = { FpgPart fpgPart, region ->
+    if (fpgPart.fivePrimeFpg ?
+            (region.aaTo <= fpgPart.aaPos) : (region.aaFrom >= fpgPart.aaPos))
+        return 1
+    else if (fpgPart.fivePrimeFpg ?
+            (region.aaFrom >= fpgPart.aaPos) : (region.aaTo <= fpgPart.aaPos))
+        return -1
+    else
+        return 0
+}
+
 GParsPool.withPool THREADS, {
     fpgSet.eachParallel { FpgPart fpgPart ->
         def domainFeatures = new DomainFeatures()
@@ -631,19 +643,28 @@ GParsPool.withPool THREADS, {
         domainFeatures.domainProfileBroken = new double[nThemes]
         def domains = domainData[fpgPart.geneName]
         domains.each {
-            if ((it.aaTo <= fpgPart.aaPos) == fpgPart.fivePrimeFpg)
-                domainFeatures.domainsRetained.add(it.featureId)
-            else if ((it.aaFrom >= fpgPart.aaPos) == fpgPart.fivePrimeFpg)
-                domainFeatures.domainsLost.add(it.featureId)
-            else
-                domainFeatures.domainsBroken.add(it.featureId)
+            switch(getRegionState(fpgPart, it)) {
+                case 1:
+                    domainFeatures.domainsRetained.add(it.featureId)
+                    break
+                case -1:
+                    domainFeatures.domainsLost.add(it.featureId)
+                    break
+                default:
+                    domainFeatures.domainsBroken.add(it.featureId)
+                    break
+            }
         }
         def piis = piiData[fpgPart.geneName]
         piis.each {
-            if ((it.aaTo <= fpgPart.aaPos) == fpgPart.fivePrimeFpg)
-                domainFeatures.piisRetained.add(it.featureId)
-            else if ((it.aaFrom >= fpgPart.aaPos) == fpgPart.fivePrimeFpg)
-                domainFeatures.piisLost.add(it.featureId)
+            switch(getRegionState(fpgPart, it)) {
+                case 1:
+                    domainFeatures.piisRetained.add(it.featureId)
+                    break
+                case -1:
+                    domainFeatures.piisLost.add(it.featureId)
+                    break
+            }
         }
         fpg2DomainFeaturesMap.put(fpgPart, domainFeatures)
     }
