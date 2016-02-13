@@ -54,25 +54,29 @@ Mikhail Shugay, Inigo Ortiz de Mendibil, Jose L. Vizmanos and Francisco J. Novo.
 
 See http://www.unav.es/genetica/oncofuse.html for additional details.
 
-### OPTIONS
+### Options
 
--p option specifies the number of threads Oncofuse will use
+``-p`` option specifies the number of threads Oncofuse will use
 
--a option specifies genome assembly version. Allowed values: hg18, hg19 and hg38. Default value: hg19
+``-a`` option specifies genome assembly version. Allowed values: hg18, hg19 and hg38. Default value: hg19
 
-### INPUT
+### Input
 
 This tool is designed to predict the oncogenic potential of fusion genes found by Next-Generation Sequencing in cancer cells. It also provides information on hallmarks of driver gene fusions, such as expression gain of resulting fusion gene, retained protein interaction interfaces and resulting protein domain functional profile.
 
 Pre-requisites: Java(TM) SE Runtime Environment (build 1.7.0 and higher)
 
-Running: $java -Xmx1G -jar Oncofuse.jar input_file input_type tissue_type output_file
+Running: 
+
+```
+$ java -Xmx1G -jar Oncofuse.jar input_file input_type tissue_type output_file
+```
 
 Supported tissue types (tissue of origin for gene fusion): EPI (epithelial), HEM (hematopoietic), MES (mesenchymal), AVG (averaged, when tissue of origin is unknown)
 
 Supported input types:
 
-input_type = "coord"
+**input_type = "coord"**
 Default format accepted by Oncofuse 
 Tab-delimited file with lines containing 5' and 3' breakpoint positions (first nucleotide lost upon fusion) and tissue of origin: 
 
@@ -88,19 +92,16 @@ Note that there are optional additional columns:
 * Number of spanning reads (reads that include junction bases)
 * Number of encompassing reads (reads that encompass junction, but the junction itself is in the insert region)
 
-input_type = "tophat"
-
+**input_type = "tophat"**
 Default output file of Tophat-fusion and Tophat2 (usually fusions.out file in results folder). Data is pre-filtered based on number of spanning N>=1 and total number of supporting reads M>=2 reads. These parameters could be changed with extended input type argument "tophat-N-M". Tissue type has to be set using tissue_type argument. Tophat-fusion-post is also supported with extended input type argument "tophat-post".
 
-input_type = "fcatcher"
-
+**input_type = "fcatcher"**
 Default output file of FusionCatcher software. Tissue type has to be set using tissue_type argument.
 
-input_type = "rnastar"
-
+**input_type = "rnastar"**
 Default output file of RNASTAR software. Data is pre-filtered based on number of spanning N>=1 and total number of supporting reads M>=2 reads. These parameters could be changed with extended input type argument "rnastar-N-M". Tissue type has to be set using tissue_type argument.
 
-### OUTPUT
+### Output
 
 A tab-delimited table with the following columns
 
