@@ -14,6 +14,8 @@ See http://www.unav.es/genetica/oncofuse.html for further details.
 
 >WHAT'S NEW
 
+- Version 1.0.9b-1.1.1 (Feb-2016) fixes some bugs highlighted by users and extends input format support. It also add filtering discordant fusions (e.g. tail-to-head transcripts)
+
 - Version 1.0.9b (Dec-2014) added (experimental) filtering for fusions with discordant FPG strands
 
 - Version 1.0.9 (Nov-2014) minor improvements, support for hg18, hg19 and hg38 genome assemblies. ALWAYS check the coordinate system
@@ -55,8 +57,18 @@ Supported input types:
 input_type = "coord"
 Default format accepted by Oncofuse 
 Tab-delimited file with lines containing 5' and 3' breakpoint positions (first nucleotide lost upon fusion) and tissue of origin: 
-5' chrom \t 5' coord \t 3' chrom \t 3' coord \t tissue_type
+
+5' chrom | 5' coord | 3' chrom | 3' coord | tissue_type
+---------|----------|----------|----------|------------
+         |          |          |          |            
+
 For this format tissue of origin is set individually for each entry in input file and tissue_type argument should be set as "-"
+Note that there are optional additional columns:
+
+* 5' fusion partner gene (FPG) strand
+* 3' FPG strand
+* Number of spanning reads (reads that include junction bases)
+* Number of encompassing reads (reads that encompass junction, but the junction itself is in the insert region)
 
 input_type = "tophat"
 
@@ -89,7 +101,7 @@ ENCOMPASSING_READS	Number of reads that map discordantly with one mate mapping t
 5_SEGMENT_TYPE	Indicates whether breakpoint is located within either exon or intron
 5_SEGMENT_ID	Indicates number of exon or intron where breakpoint is located
 5_COORD_IN_SEGMENT	Indicates coordinates for breakpoint within that exon/intron
-5_FULL_AA	Length of translated 5' FPG in full amino acids
+5_FULL_AA	Length of translated 5' fusion partner gene (FPG) in full amino acids
 5_FRAME	Frame of translated 5' FPG
 
 (Same as 7 lines above for the 3' fusion partner gene)
